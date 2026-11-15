@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 33</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 34</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -733,7 +733,15 @@ async function buildRequestDocx(row){
   const xml=new DOMParser().parseFromString(new TextDecoder().decode(doc.data),'application/xml');
   const ps=Array.from(xml.getElementsByTagNameNS(NS,'p'));
   const mkrun=(text,tmpl)=>{const r=xml.createElementNS(NS,'w:r'),rp=Array.from(tmpl.children).find(c=>c.localName==='rPr');if(rp)r.appendChild(rp.cloneNode(true));const t=xml.createElementNS(NS,'w:t');t.setAttribute('xml:space','preserve');t.textContent=text;r.appendChild(t);return r;};
-  const beforeTab=(p,idx,text)=>{const runs=Array.from(p.children).filter(r=>r.localName==='r'&&r.getElementsByTagNameNS(NS,'tab').length);const r=runs[idx],nr=mkrun(text,r);let rp=Array.from(nr.children).find(c=>c.localName==='rPr');if(!rp){rp=xml.createElementNS(NS,'w:rPr');nr.insertBefore(rp,nr.firstChild);}const u=xml.createElementNS(NS,'w:u');u.setAttributeNS(NS,'w:val','single');rp.appendChild(u);r.parentNode.insertBefore(nr,r);};
+  const beforeTab=(p,idx,text)=>{
+    Array.from(p.getElementsByTagNameNS(NS,'tab')).forEach(t=>{if(t.parentNode.localName==='tabs')return;});
+    Array.from(p.getElementsByTagNameNS(NS,'tab')).filter(t=>t.parentNode.localName==='tabs'&&t.getAttributeNS(NS,'leader')).forEach(t=>t.removeAttributeNS(NS,'leader'));
+    const runs=Array.from(p.children).filter(r=>r.localName==='r'&&r.getElementsByTagNameNS(NS,'tab').length);const r=runs[idx];
+    const ul=run=>{let rp=Array.from(run.children).find(c=>c.localName==='rPr');if(!rp){rp=xml.createElementNS(NS,'w:rPr');run.insertBefore(rp,run.firstChild);}const u=xml.createElementNS(NS,'w:u');u.setAttributeNS(NS,'w:val','single');rp.appendChild(u);};
+    const nr=mkrun(text,r);ul(nr);r.parentNode.insertBefore(nr,r);
+    const tr=xml.createElementNS(NS,'w:r'),rp0=Array.from(r.children).find(c=>c.localName==='rPr');if(rp0)tr.appendChild(rp0.cloneNode(true));tr.appendChild(xml.createElementNS(NS,'w:tab'));ul(tr);
+    const tabEl=r.getElementsByTagNameNS(NS,'tab')[0];tabEl.parentNode.removeChild(tabEl);r.parentNode.insertBefore(tr,r);
+  };
   const sott=pr.gen==='M'?'Il sottoscritto':'La sottoscritta';
   Array.from(ps[2].getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent==='Il/La sottoscritt__')t.textContent=sott;});
   beforeTab(ps[1],0,' '+pr.dirig);
