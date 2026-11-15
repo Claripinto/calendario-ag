@@ -175,7 +175,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 53</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 54</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -1108,9 +1108,9 @@ function printableDoc(){
       +ab(1645,6661,'Sospensione:','font-weight:bold')
       +table(W2,r2,1512,6735+197)
       +abm(26.4,227,'Motivo Sospensione <b style="font-size:5pt">(utilizzare se uguale per tutti i giorni di sospensione):</b>')
-      +abm(109,224.6,'_'.repeat(43))
-      +(uniq?abm(109,221.2,esc(uniq),'width:82mm;font-size:11pt'):'')
-      +abm(111.4,228.4,'<div class="rs">Inaccessibilità alla struttura,<br>Guasto macchina,<br>(indisponibilità personale) Ferie, Congresso, L104, Malattia, ecc.<br>Indisponibilità Materiale dispositivo.</div>')
+      +abm(109,226.8,'_'.repeat(43))
+      +(uniq?abm(109,223.4,esc(uniq),'width:82mm;font-size:11pt'):'')
+      +abm(111.4,230.9,'<div class="rs">Inaccessibilità alla struttura,<br>Guasto macchina,<br>(indisponibilità personale) Ferie, Congresso, L104, Malattia, ecc.<br>Indisponibilità Materiale dispositivo.</div>')
       +abm(26.4,246.4,'<b>Richiedente:</b>'+'_'.repeat(27))
       +abm(26.4,255.7,'<b>Riferimento telefonico:</b>'+(s.telefono?'<span style="position:absolute;left:'+mm(2100)+';top:0">'+esc(s.telefono)+'</span>':'')+'_'.repeat(18))
       +abm(127.5,247.2,'<b>La Direzione Sanitaria</b>','width:60mm;text-align:center')
