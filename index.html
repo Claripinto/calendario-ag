@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 30</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 31</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -761,6 +761,16 @@ function requestHTML(row){
    +'<p style="text-align:center;font-weight:bold;margin:18px 0 6px">SI AUTORIZZA</p>'
    +'<p>Il Dirigente resp. U.O./Uff./Serv. '+ln('',150)+'<span style="float:right">Il Dirigente '+ln('',170)+'</span></p></body></html>';
 }
+function requestsHTML(rows){
+  const hs=rows.map(requestHTML),head=hs[0].slice(0,hs[0].indexOf('<body>')+6);
+  return head+hs.map((h,i)=>'<div'+(i?' style="page-break-before:always"':'')+'>'+h.slice(h.indexOf('<body>')+6,h.indexOf('</body>'))+'</div>').join('')+'</body></html>';
+}
+function printRequests(rows){
+  if(!rows.length)return;const html=rows.length===1?requestHTML(rows[0]):requestsHTML(rows);
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';f.srcdoc=html;
+  f.onload=()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(e){download('richieste.html',html,'File da stampare');}setTimeout(()=>f.remove(),60000);};
+  document.body.appendChild(f);
+}
 function printRequest(row){
   const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';f.srcdoc=requestHTML(row);
   f.onload=()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(e){download('richiesta-'+row.a+'.html',requestHTML(row),'File da stampare');}setTimeout(()=>f.remove(),60000);};
@@ -782,7 +792,7 @@ function renderRiepilogo(){
     +'<label class="f">Cosa elencare<select id="rp-kind">'+Object.keys(RPK).map(k=>'<option value="'+k+'"'+((f.kind||'ferie')===k?' selected':'')+'>'+RPK[k][0]+'</option>').join('')+'</select></label>';
   if(r===null)h+='<div class="hint">Imposta le date Dal e Al.</div>';
   else{h+=(r.length?r.map((x,i)=>{tot+=x.n;return '<div class="counter"><div><b>dal '+itDate(x.a)+' al '+itDate(x.b)+'</b></div><div class="hint">'+esc(TYPES[x.t].label)+'</div><div class="mono">'+x.n+' gg</div><div class="row" style="grid-column:1/-1"><button class="btn small primary" data-act="rqword" data-i="'+i+'">Scarica Word</button><button class="btn small" data-act="rqpdf" data-i="'+i+'">Stampa / PDF</button></div></div>';}).join(''):'<div class="hint">Nessun giorno segnato in questo periodo.</div>')
-    +'<div class="hint"><b>Totale: '+tot+' giorni</b></div><div class="row"><button class="btn primary" data-act="rpcopy">Copia come testo</button>'+(downloads?'<button class="btn" data-act="rpdl">Scarica da stampare</button>':'')+'</div>';}
+    +'<div class="hint"><b>Totale: '+tot+' giorni</b></div><div class="row"><button class="btn primary" data-act="rpall">Stampa / PDF di tutte ('+r.length+')</button><button class="btn" data-act="rpcopy">Copia come testo</button>'+(downloads?'<button class="btn" data-act="rpdl">Scarica da stampare</button>':'')+'</div>';}
   return h+'</div>';
 }
 function renderPersona(){
@@ -956,6 +966,7 @@ function clickHandler(ev){
   else if(a==='copymot'){const g=groups(state.settings.periodFrom,state.settings.periodTo)[+b.dataset.i];if(g)copyText(motivText(g));}
   else if(a==='copyform')copyText(formText());
   else if(a==='rpcopy')copyText(rpText());
+  else if(a==='rpall'){printRequests(rpRows()||[]);}
   else if(a==='rqword'||a==='rqpdf'){const row=(rpRows()||[])[+b.dataset.i];if(!row)return;
     if(a==='rqpdf'){printRequest(row);return;}
     buildRequestDocx(row).then(bl=>{if(!downloads){toast('Download non disponibile qui');return;}
