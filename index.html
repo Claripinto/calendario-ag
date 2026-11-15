@@ -16,7 +16,7 @@
   --bg:#f2f5f7; --surface:#ffffff; --surface2:#e9eef2; --ink:#16212b; --muted:#566676; --line:#d5dde4;
   --accent:#0a6a6a; --accent-ink:#ffffff; --sel:#cfeeee;
   --ok:#17794a; --ok-bg:#e4f3ea; --warn:#9a5200; --warn-bg:#fff1dc; --bad:#b3261e; --bad-bg:#fcebe9; --info:#31526f; --info-bg:#e6eef6;
-  --t-formazione:#0b6e99;--t-ferie:#2f6db5; --t-feriep:#1f8a9e; --t-fest:#7a4fb0; --t-permesso:#0f7f7f; --t-congresso:#4a55c4; --t-l104:#b2467d; --t-nc:#6b7886;
+  --t-formazione:#0b6e99;--t-ferie:#2f6db5; --t-feriep:#1f8a9e; --t-visita:#b5651d; --t-fest:#7a4fb0; --t-permesso:#0f7f7f; --t-congresso:#4a55c4; --t-l104:#b2467d; --t-nc:#6b7886;
   --t-malattia:#b3261e; --t-guasto:#c2641a; --t-struttura:#9a3412; --t-materiale:#a16207; --t-riprog:#2f7d4a;
   --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   color-scheme:light;
@@ -26,7 +26,7 @@
     --bg:#10171d; --surface:#18222b; --surface2:#202c37; --ink:#e7edf2; --muted:#9aaab8; --line:#2c3a47;
     --accent:#4fc3c3; --accent-ink:#06201f; --sel:#1d4a4a;
     --ok:#5ad39a; --ok-bg:#16322a; --warn:#f0b061; --warn-bg:#3a2a12; --bad:#ff8c84; --bad-bg:#3d1d1b; --info:#8fb8de; --info-bg:#1b2c3b;
-    --t-formazione:#5fb7e5;--t-ferie:#6ea6ec; --t-feriep:#6cc3d2; --t-fest:#b390e6; --t-permesso:#4fc3c3; --t-congresso:#8c97f0; --t-l104:#e283b2; --t-nc:#9aa8b6;
+    --t-formazione:#5fb7e5;--t-ferie:#6ea6ec; --t-feriep:#6cc3d2; --t-visita:#e0a060; --t-fest:#b390e6; --t-permesso:#4fc3c3; --t-congresso:#8c97f0; --t-l104:#e283b2; --t-nc:#9aa8b6;
     --t-malattia:#ff8c84; --t-guasto:#f0a263; --t-struttura:#f08f67; --t-materiale:#e3b94f; --t-riprog:#6fcf8c;
     color-scheme:dark;
   }
@@ -35,7 +35,7 @@
   --bg:#10171d; --surface:#18222b; --surface2:#202c37; --ink:#e7edf2; --muted:#9aaab8; --line:#2c3a47;
   --accent:#4fc3c3; --accent-ink:#06201f; --sel:#1d4a4a;
   --ok:#5ad39a; --ok-bg:#16322a; --warn:#f0b061; --warn-bg:#3a2a12; --bad:#ff8c84; --bad-bg:#3d1d1b; --info:#8fb8de; --info-bg:#1b2c3b;
-  --t-formazione:#5fb7e5;--t-ferie:#6ea6ec; --t-feriep:#6cc3d2; --t-fest:#b390e6; --t-permesso:#4fc3c3; --t-congresso:#8c97f0; --t-l104:#e283b2; --t-nc:#9aa8b6;
+  --t-formazione:#5fb7e5;--t-ferie:#6ea6ec; --t-feriep:#6cc3d2; --t-visita:#e0a060; --t-fest:#b390e6; --t-permesso:#4fc3c3; --t-congresso:#8c97f0; --t-l104:#e283b2; --t-nc:#9aa8b6;
   --t-malattia:#ff8c84; --t-guasto:#f0a263; --t-struttura:#f08f67; --t-materiale:#e3b94f; --t-riprog:#6fcf8c;
   color-scheme:dark;
 }
@@ -88,7 +88,7 @@ h3{font-size:15px;margin:0 0 6px;font-weight:600}
 .cell .hl{font-size:10px;color:var(--bad);line-height:1}
 .cell .bk{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:var(--warn)}
 .badge{display:inline-block;align-self:flex-start;font-size:11px;font-weight:700;color:#fff;border-radius:5px;padding:0 5px;line-height:16px;font-family:var(--font-mono)}
-.t-formazione{--c:var(--t-formazione)} .t-ferie{--c:var(--t-ferie)} .t-feriep{--c:var(--t-feriep)} .t-fest{--c:var(--t-fest)} .t-permesso{--c:var(--t-permesso)} .t-congresso{--c:var(--t-congresso)}
+.t-formazione{--c:var(--t-formazione)} .t-ferie{--c:var(--t-ferie)} .t-feriep{--c:var(--t-feriep)} .t-visita{--c:var(--t-visita)} .t-fest{--c:var(--t-fest)} .t-permesso{--c:var(--t-permesso)} .t-congresso{--c:var(--t-congresso)}
 .t-l104{--c:var(--t-l104)} .t-nc{--c:var(--t-nc)} .t-malattia{--c:var(--t-malattia)} .t-guasto{--c:var(--t-guasto)}
 .t-struttura{--c:var(--t-struttura)} .t-materiale{--c:var(--t-materiale)} .t-riprog{--c:var(--t-riprog)}
 .badge{background:var(--c)}
@@ -154,7 +154,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 22</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 23</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -209,6 +209,7 @@ const CAUSALI={
 const TYPES={
   ferie:{label:'Ferie',short:'F',causale:5,plan:true,counter:'ferie',motivo:'Ferie'},
   feriep:{label:'Ferie anni precedenti',short:'FP',causale:5,plan:true,counter:'feriep',motivo:'Ferie'},
+  visita:{label:'Visite, terapie, esami (art. 37)',short:'VM',causale:5,plan:true,counter:'visite',motivo:'Permesso retribuito'},
   fest:{label:'Festività soppresse',short:'S',causale:5,plan:true,counter:'fest',motivo:'Festività soppresse'},
   permesso:{label:'Permesso retribuito',short:'P',causale:5,plan:true,counter:'permessi',motivo:'Permesso retribuito'},
   congresso:{label:'Congresso / aggiornamento facoltativo (art. 33)',short:'C',causale:5,plan:true,counter:'agg',motivo:'Congresso/aggiornamento'},
@@ -232,10 +233,10 @@ function defaults(){
     settings:{periodFrom:'2027-07-01',periodTo:'2028-06-30',
       codes:[],
       workdays:[0,1,2,3,4,5],wdv:2,patron:true,motivoAll:true,
-      typesOn:{ferie:true,feriep:true,fest:true,permesso:true,congresso:true,formazione:true,l104:false,malattia:true,guasto:true,struttura:true,materiale:true,riprog:true},
+      typesOn:{ferie:true,feriep:true,visita:true,fest:true,permesso:true,congresso:true,formazione:true,l104:false,malattia:true,guasto:true,struttura:true,materiale:true,riprog:true},
       struttura:'',qualifica:'',nominativo:'',codReg:'',telefono:'',
       motivoMain:'Programmazione ferie e permessi retribuiti (congressi, visite mediche)',
-      ent:{ferie:32,fest:4,agg:8,formOre:184,permessi:3,permessiUnit:'giorni',l104Month:0,yr:{}},entv:2},
+      ent:{ferie:32,fest:4,agg:8,formOre:184,permessi:3,permessiUnit:'giorni',visiteOre:18,l104Month:0,yr:{}},entv:2},
     entries:seedEntries(),congressi:seedCongressi(),imported:true};
 }
 let state=defaults();
@@ -457,7 +458,7 @@ function motivText(g){
   return (TYPES[state.entries[g.start].type].plan?'Assenza programmata':'Sospensione')+' ('+labels+') dal '+itDate(g.start)+' al '+itDate(g.end)+', agende '+codes.join(', ')+'. Causale '+cs+': '+CAUSALI[cs]+'.';
 }
 function counters(year){
-  const c={ferie:0,feriep:0,fest:0,permessi:0,agg:0,form:0,l104:0,nc:0};
+  const c={ferie:0,feriep:0,visite:0,fest:0,permessi:0,agg:0,form:0,l104:0,nc:0};
   Object.keys(state.entries).forEach(d=>{
     if(d.slice(0,4)!==String(year)||!isWorking(d))return;
     const k=TYPES[state.entries[d].type].counter;if(k)c[k]++;
@@ -627,12 +628,13 @@ function renderSpe(){
   const c=counters(view.year),e=state.settings.ent;
   let html='<h2>Spettanze</h2><div class="hint">Conteggio per anno solare dei giorni lavorativi segnati. Le ferie maturano per anno solare, mentre la proiezione delle agende va da luglio a giugno.</div>';
   html+='<label class="f" style="max-width:200px">Anno<select data-act="year">'+years.map(y=>'<option value="'+y+'"'+(y===view.year?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
-  const yr=yrData(view.year),FA=ferieAPof(view.year),fAP=FA.v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0;
-  html+='<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',Math.round(c.form*6.333*10)/10,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',Math.round((c.permessi*6.333+pU)*10)/10,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+pU/6.333)*100)/100,e.permessi,'gg'))
+  const yr=yrData(view.year),FA=ferieAPof(view.year),fAP=FA.v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0,vU=+yr.visOre||0;
+  html+='<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+bar('Visite, terapie, esami (art. 37), in ore',Math.round((c.visite*6.333+vU)*10)/10,e.visiteOre||18,'ore')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',Math.round(c.form*6.333*10)/10,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',Math.round((c.permessi*6.333+pU)*10)/10,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+pU/6.333)*100)/100,e.permessi,'gg'))
     +'<div class="counter"><div>Da classificare</div><div class="hint">Giorni non ancora assegnati a un tipo</div><div class="mono">'+c.nc+' gg</div></div></div>';
   html+='<div class="card"><h3>Dal cartellino, anno '+view.year+'</h3><div class="hint">Dati già maturati o usati che non sono segnati nel calendario. Ferie residue: si sommano alle ferie dell\'anno; se inserisci residue e ferie fruite di un anno, l\'anno dopo riceve il riporto in automatico (puoi sempre correggerlo a mano). Permessi: ore già usate (formato 7:55 oppure 7.9).</div>'
     +'<label class="f">Ferie residue da anni precedenti (giorni)'+(FA.auto?' · calcolate dal consuntivo '+(view.year-1):'')+'<input type="number" min="0" step="0.5" data-yr="ferieAP" value="'+fAP+'"></label>'
     +'<label class="f">Ferie già fruite non segnate nel calendario (giorni, tolte dalle residue)<input type="number" min="0" step="0.5" data-yr="ferieUsate" value="'+(fU||'')+'" placeholder="0"></label>'
+    +'<label class="f">Ore già usate per visite, terapie, esami (art. 37)<input type="text" inputmode="decimal" data-yr="visOre" value="'+(vU?(Math.floor(vU)+':'+String(Math.round((vU%1)*60)).padStart(2,'0')):'')+'" placeholder="es. 3:30"></label>'
     +'<label class="f">Permessi personali già usati (ore)<input type="text" inputmode="decimal" data-yr="permOre" value="'+(pU?(Math.floor(pU)+':'+String(Math.round((pU%1)*60)).padStart(2,'0')):'')+'" placeholder="es. 7:55"></label></div>';
   if(e.l104Month>0){
     const m=l104Months(view.year);
@@ -851,7 +853,7 @@ document.addEventListener('change',ev=>{
   }
   if(t.dataset.yr){
     let v=t.value.trim().replace(',','.');
-    if(t.dataset.yr==='permOre'&&v.indexOf(':')>-1){const q=v.split(':');v=(parseInt(q[0],10)||0)+(parseInt(q[1],10)||0)/60;}
+    if((t.dataset.yr==='permOre'||t.dataset.yr==='visOre')&&v.indexOf(':')>-1){const q=v.split(':');v=(parseInt(q[0],10)||0)+(parseInt(q[1],10)||0)/60;}
     v=Math.max(0,parseFloat(v)||0);
     const E=state.settings.ent;E.yr=E.yr||{};E.yr[view.year]=E.yr[view.year]||{};E.yr[view.year][t.dataset.yr]=v;
     save();render();return;
