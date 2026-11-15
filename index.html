@@ -175,7 +175,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 51</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 52</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -953,6 +953,7 @@ async function buildSuspDocx(part){
         const first=kids(p,'r')[0];p.insertBefore(node,first);break;}
     }
   }
+  Array.from(xml.getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent.indexOf('Guanto')>-1)t.textContent=t.textContent.replace('Guanto','Guasto');});
   doc.data=new TextEncoder().encode(new XMLSerializer().serializeToString(xml));
   return zipStore(files);
 }
@@ -1105,14 +1106,12 @@ function printableDoc(){
       +table(W1,r1,1536,2583)
       +ab(1645,6661,'Sospensione:','font-weight:bold')
       +table(W2,r2,1512,6735+197)
-      +ab(1494,12760,'<b>Motivo Sospensione</b> <b style="font-size:5pt">(utilizzare se uguale per tutti i giorni di sospensione):</b>')
-      +ab(1494,13530,'<b>Richiedente:</b>'+'_'.repeat(27))
-      +ab(1494,14060,'<b>Riferimento telefonico:</b>'+(s.telefono?'<span style="position:absolute;left:'+mm(2100)+';top:0">'+esc(s.telefono)+'</span>':'')+'_'.repeat(18))
-      +ab(218,14500,'_'.repeat(41))
-      +ab(218,14500-380,'<span style="font-size:11pt">'+esc(uniq)+'</span>')
-      +ab(360,14800,'<div class="rs">Inaccessibilità alla struttura,<br>Guanto macchina,<br>(indisponibilità personale) Ferie, Congresso, L104, Malattia, ecc.<br>Indisponibilità Materiale dispositivo.</div>')
-      +ab(1776,15400,'<b>La Direzione Sanitaria</b>')
-      +ab(1068,15900,'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+'_'.repeat(22))
+      +ab(1494,12700,'<b>Motivo Sospensione</b> <b style="font-size:5pt">(utilizzare se uguale per tutti i giorni di sospensione):</b>'+(uniq?' <span style="font-size:11pt">'+esc(uniq)+'</span>':''))
+      +ab(1494,13050,'<div class="rs">Inaccessibilità alla struttura,<br>Guasto macchina,<br>(indisponibilità personale) Ferie, Congresso, L104, Malattia, ecc.<br>Indisponibilità Materiale dispositivo.</div>')
+      +ab(1494,13950,'<b>Richiedente:</b>'+'_'.repeat(27))
+      +ab(1494,14600,'<b>Riferimento telefonico:</b>'+(s.telefono?'<span style="position:absolute;left:'+mm(2100)+';top:0">'+esc(s.telefono)+'</span>':'')+'_'.repeat(18))
+      +ab(7000,13950,'<b>La Direzione Sanitaria</b>')
+      +ab(6300,14600,'_'.repeat(30))
       +'</div>';
   }
   return '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Riproiezione / Sospensione agende</title><style>@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font:11pt/1.15 "Times New Roman",Times,serif;color:#000}.pg{position:relative;width:210mm;height:296.5mm;overflow:hidden;page-break-after:always}.pg:last-child{page-break-after:auto}.a{position:absolute;white-space:nowrap}table{position:absolute;border-collapse:collapse;table-layout:fixed}td{border:.2mm solid #000;padding:0 .3mm;overflow:hidden;vertical-align:middle;line-height:1.05}td.h{text-align:center;font-weight:bold;font-size:11pt}.rs{font:bold 6pt/1.25 Arial,Helvetica,sans-serif}</style></head><body>'+out+'</body></html>';
