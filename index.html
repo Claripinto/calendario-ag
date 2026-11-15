@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 28</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 29</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -692,6 +692,26 @@ function formText(){
 const RQT={ferie:'Ferie, anno corrente',feriep:'Ferie, anno precedente',fest:'Festività soppresse',permesso:'Permesso per motivi personali (art. 34)',congresso:'Partecipazione a congressi/aggiornamento (art. 33)',visita:'Visite, terapie, esami (art. 37)',lutto:'Lutto familiare',l104:'Legge 104'};
 const RQS={bozza:'Bozza',inviata:'Inviata',autorizzata:'Autorizzata',negata:'Negata'};
 function rqDays(a,b){return a&&b&&a<=b?eachDay(a,b).filter(isWorking):[];}
+const RPK={ferie:['Ferie (anno corrente e precedente)',['ferie','feriep']],fest:['Ferie e festività soppresse',['ferie','feriep','fest']],tutti:['Tutte le assenze segnate',null]};
+function rpRows(){
+  const f=view.rp||{},k=RPK[f.kind||'ferie'];if(!f.from||!f.to||f.from>f.to)return null;
+  return groups(f.from,f.to).filter(g=>!k[1]||k[1].includes(g.cls)).map(g=>({a:g.start,b:g.end,n:g.days.length,t:g.cls}));
+}
+function rpText(){
+  const r=rpRows()||[],f=view.rp||{};
+  let tot=0;const lines=r.map(x=>{tot+=x.n;return 'dal '+itDate(x.a)+' al '+itDate(x.b)+' · '+x.n+(x.n===1?' giorno':' giorni')+' · '+TYPES[x.t].label;});
+  return 'Giorni segnati dal '+itDate(f.from)+' al '+itDate(f.to)+' ('+RPK[f.kind||'ferie'][0]+')\n'+(lines.join('\n')||'Nessun giorno segnato')+'\nTotale: '+tot+' giorni';
+}
+function renderRiepilogo(){
+  const f=view.rp||{},r=rpRows();let tot=0;
+  let h='<div class="card"><h3>Riepilogo dei giorni segnati in un periodo</h3><div class="hint">Scegli il periodo e il tipo: l\'app elenca i giorni già segnati nel calendario, raggruppati in periodi, senza creare nulla di nuovo.</div>'
+    +'<div class="cols"><label class="f">Dal<input type="date" id="rp-from" value="'+(f.from||'')+'"></label><label class="f">Al<input type="date" id="rp-to" value="'+(f.to||'')+'"></label></div>'
+    +'<label class="f">Cosa elencare<select id="rp-kind">'+Object.keys(RPK).map(k=>'<option value="'+k+'"'+((f.kind||'ferie')===k?' selected':'')+'>'+RPK[k][0]+'</option>').join('')+'</select></label>';
+  if(r===null)h+='<div class="hint">Imposta le date Dal e Al.</div>';
+  else{h+=(r.length?r.map(x=>{tot+=x.n;return '<div class="counter"><div><b>dal '+itDate(x.a)+' al '+itDate(x.b)+'</b></div><div class="hint">'+esc(TYPES[x.t].label)+'</div><div class="mono">'+x.n+' gg</div></div>';}).join(''):'<div class="hint">Nessun giorno segnato in questo periodo.</div>')
+    +'<div class="hint"><b>Totale: '+tot+' giorni</b></div><div class="row"><button class="btn primary" data-act="rpcopy">Copia come testo</button>'+(downloads?'<button class="btn" data-act="rpdl">Scarica da stampare</button>':'')+'</div>';}
+  return h+'</div>';
+}
 function renderRichieste(){
   const L=(state.richieste=state.richieste||[]).slice().sort((x,y)=>x.from<y.from?-1:1);
   const f=view.rq||{};
@@ -706,7 +726,7 @@ function renderRichieste(){
 }
 function renderMod(){
   const gs=groups(state.settings.periodFrom,state.settings.periodTo);
-  let html=renderRichieste()+'<h2>Modulo di riproiezione e sospensione</h2><div class="banner info">Bozza di compilazione con le stesse colonne del modulo dell\'area CUP. Riportala sul modulo ufficiale e falla firmare: qui non ci sono firme né timbri. Si compila da sola dalle date del calendario.</div>';
+  let html=renderRiepilogo()+renderRichieste()+'<h2>Modulo di riproiezione e sospensione</h2><div class="banner info">Bozza di compilazione con le stesse colonne del modulo dell\'area CUP. Riportala sul modulo ufficiale e falla firmare: qui non ci sono firme né timbri. Si compila da sola dalle date del calendario.</div>';
   html+='<div class="row" style="margin:8px 0"><button class="btn primary" data-act="copyform">Copia come testo</button>'
     +(downloads?'<button class="btn" data-act="dlhtml">Scarica versione da stampare</button><button class="btn" data-act="dlcsv">Scarica CSV</button>':'')
     +'<span class="hint">'+gs.length+' righe di sospensione</span></div>';
@@ -857,6 +877,8 @@ function clickHandler(ev){
   else if(a==='gocal'){const d=b.dataset.day;view.tab='cal';view.y=+d.slice(0,4);view.m=+d.slice(5,7)-1;view.anchor=d;view.end=null;render();window.scrollTo(0,0);}
   else if(a==='copymot'){const g=groups(state.settings.periodFrom,state.settings.periodTo)[+b.dataset.i];if(g)copyText(motivText(g));}
   else if(a==='copyform')copyText(formText());
+  else if(a==='rpcopy')copyText(rpText());
+  else if(a==='rpdl')download('riepilogo-giorni.html','<!doctype html><meta charset="utf-8"><title>Riepilogo giorni</title><body style="font-family:Arial;font-size:14px;margin:30px"><pre style="font-family:inherit;white-space:pre-wrap">'+esc(rpText())+'</pre></body>','File');
   else if(a==='dlhtml')download('sospensione-agende.html',printableDoc(),'File');
   else if(a==='dlcsv')download('sospensione-agende.csv',csvText(),'File');
   else if(a==='syncsave')saveSyncForm();
@@ -890,6 +912,7 @@ document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t.id==='bkfile'){importBackup(t.files&&t.files[0]);t.value='';return;}
   if(t.dataset.act==='year'){view.year=+t.value;render();return;}
+  if(t.id==='rp-from'||t.id==='rp-to'||t.id==='rp-kind'){const g=id=>(document.getElementById(id)||{}).value||'';view.rp={from:g('rp-from'),to:g('rp-to'),kind:g('rp-kind')||'ferie'};render();return;}
   if(t.id==='rq-from'||t.id==='rq-to'||t.id==='rq-type'){const g=id=>(document.getElementById(id)||{}).value||'';view.rq={from:g('rq-from'),to:g('rq-to'),type:g('rq-type')||'ferie'};render();return;}
   if(t.dataset.act==='rqstato'){const r=(state.richieste||[]).find(x=>x.id===t.dataset.id);if(r){r.stato=t.value;save();}return;}
   if(t.dataset.act==='permunit'){state.settings.ent.permessiUnit=t.value;state.settings.ent.permessi=t.value==='ore'?18:3;save();render();return;}
