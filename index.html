@@ -175,7 +175,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 47</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 48</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -552,7 +552,7 @@ function sumStrip(y){
   const c=counters(y),e=state.settings.ent,yr=yrData(y),fAP=ferieAPof(y).v,fU=+yr.ferieUsate||0,vU=+yr.visOre||0,pU=+yr.permOre||0;
   const r1=v=>Math.round(v*10)/10;
   const it=[['Ferie',c.ferie,e.ferie],['Residue',c.feriep+fU,fAP],['Festività',c.fest,e.fest],['Visite h',c.visite*6.333+c.visiteH+vU,e.visiteOre||18,1],['Permessi',e.permessiUnit==='ore'?c.permessi*6.333+c.permessiH+pU:r1(c.permessi+(c.permessiH+pU)/6.333),e.permessi,e.permessiUnit==='ore'?1:0],['Congressi',c.agg,e.agg]];
-  return '<div class="sumstrip" aria-label="Spettanze '+y+'">'+it.map(x=>'<span class="ch '+(x[2]>0&&x[1]>x[2]?'bad':(x[2]>0&&x[1]>=x[2]*0.9?'warn':''))+'">'+x[0]+' '+(x[3]?hm(x[1])+'/'+hm(x[2]):x[1]+'/'+x[2])+'</span>').join('')+'</div>';
+  return '<div class="sumstrip" aria-label="Giorni e ore rimasti nel '+y+'">'+it.map(x=>'<span class="ch '+(x[2]>0&&x[1]>x[2]?'bad':(x[2]>0&&x[1]>=x[2]*0.9?'warn':''))+'">'+x[0]+' '+(x[3]?hm(x[2]-x[1])+'/'+hm(x[2]):(Math.round((x[2]-x[1])*100)/100)+'/'+x[2])+'</span>').join('')+'</div>';
 }
 function renderCal(){
   const y=view.y,m=view.m,first=iso(y,m,1),dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(),sd=new Set(selDays());
@@ -682,9 +682,8 @@ function hm(v){const m=Math.round((+v||0)*60+1e-6),h=Math.floor(m/60),mm=m%60;re
 function bar(label,used,tot,unit,gg){
   const H=unit==='ore',F=H?hm:(x=>x);
   if(!(tot>0))return '<div class="counter"><div>'+esc(label)+'</div><div class="hint">Spettanza da impostare</div><div class="mono">'+F(used)+' '+unit+'</div></div>';
-  const pct=Math.min(100,Math.round(used*100/tot)),cls=used>tot?'bad':(used>=tot*0.9?'warn':'');
-  const rest=tot-used;
-  return '<div class="counter"><div>'+esc(label)+'</div><div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div><div class="mono">'+F(used)+' / '+F(tot)+' '+(rest<0?'<span class="chip bad">oltre di '+F(-rest)+'</span>':'<span class="hint">restano '+F(rest)+'</span>')+(gg?'<div class="ggn">'+Math.floor(used/(19/3)+0.01)+' di '+Math.floor(tot/(19/3)+0.01)+' giornate (6:20)</div>':'')+'</div></div>';
+  const rest=tot-used,pct=Math.max(0,Math.min(100,Math.round(rest*100/tot))),cls=used>tot?'bad':(used>=tot*0.9?'warn':'');
+  return '<div class="counter"><div>'+esc(label)+'</div><div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div><div class="mono">'+(rest<0?'<span class="chip bad">oltre di '+F(-rest)+'</span>':F(rest))+' / '+F(tot)+(gg?'<div class="ggn">restano '+Math.max(0,Math.floor(rest/(19/3)+0.01))+' di '+Math.floor(tot/(19/3)+0.01)+' giornate (6:20)</div>':'')+'<div class="ggn">usati '+F(used)+'</div></div></div>';
 }
 function spCard(y,compact){
   const c=counters(y),e=state.settings.ent,yr=yrData(y),fAP=ferieAPof(y).v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0,vU=+yr.visOre||0,cAP=+yr.creditoAP||0;
