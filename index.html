@@ -78,6 +78,7 @@ h3{font-size:15px;margin:0 0 6px;font-weight:600}
 .sumstrip{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}.sumstrip .ch{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;white-space:nowrap}.sumstrip .ch.warn{border-color:var(--warn)}.sumstrip .ch.bad{border-color:var(--bad)}
 .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;user-select:none;-webkit-user-select:none}
 .modal{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center}.mback{position:absolute;inset:0;background:rgba(0,0,0,.45)}.mcard{position:relative;background:var(--surface);color:var(--ink);border-radius:12px;max-width:540px;width:calc(100% - 24px);max-height:90vh;overflow:auto;padding:14px 16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}.mcard>.card{border:0;padding:0;box-shadow:none;background:none}.mtypes{display:grid;grid-template-columns:1fr 1fr;gap:6px}.mtypes .tbtn{font-size:12.5px;padding:6px 8px}
+.ggn{font-size:11.5px;color:var(--muted);font-family:inherit}
 .tbtn.on{outline:2px solid var(--accent);background:var(--surface2)}
 .dow{font-size:12px;color:var(--muted);text-align:center;padding:2px 0;font-weight:500}
 .cell{position:relative;min-height:56px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:4px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
@@ -174,7 +175,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 46</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 47</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -678,16 +679,16 @@ function ferieAPof(y){
   return {v:0,auto:false};
 }
 function hm(v){const m=Math.round((+v||0)*60+1e-6),h=Math.floor(m/60),mm=m%60;return h+':'+String(mm).padStart(2,'0');}
-function bar(label,used,tot,unit){
+function bar(label,used,tot,unit,gg){
   const H=unit==='ore',F=H?hm:(x=>x);
   if(!(tot>0))return '<div class="counter"><div>'+esc(label)+'</div><div class="hint">Spettanza da impostare</div><div class="mono">'+F(used)+' '+unit+'</div></div>';
   const pct=Math.min(100,Math.round(used*100/tot)),cls=used>tot?'bad':(used>=tot*0.9?'warn':'');
   const rest=tot-used;
-  return '<div class="counter"><div>'+esc(label)+'</div><div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div><div class="mono">'+F(used)+' / '+F(tot)+' '+(rest<0?'<span class="chip bad">oltre di '+F(-rest)+'</span>':'<span class="hint">restano '+F(rest)+'</span>')+'</div></div>';
+  return '<div class="counter"><div>'+esc(label)+'</div><div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div><div class="mono">'+F(used)+' / '+F(tot)+' '+(rest<0?'<span class="chip bad">oltre di '+F(-rest)+'</span>':'<span class="hint">restano '+F(rest)+'</span>')+(gg?'<div class="ggn">'+Math.floor(used/(19/3)+0.01)+' di '+Math.floor(tot/(19/3)+0.01)+' giornate (6:20)</div>':'')+'</div></div>';
 }
 function spCard(y,compact){
   const c=counters(y),e=state.settings.ent,yr=yrData(y),fAP=ferieAPof(y).v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0,vU=+yr.visOre||0,cAP=+yr.creditoAP||0;
-  return '<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+(cAP>0?bar('Ore a recupero (credito dall\'anno precedente)',c.rec*6.333+c.recH,cAP,'ore'):'<div class="counter"><div>Ore a recupero usate</div><div class="hint">Inserisci il credito dal cartellino per confrontarle</div><div class="mono">'+hm(c.rec*6.333+c.recH)+' ore</div></div>')+bar('Visite, terapie, esami (art. 37), in ore',c.visite*6.333+c.visiteH+vU,e.visiteOre||18,'ore')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',c.form*6.333,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',c.permessi*6.333+c.permessiH+pU,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+(c.permessiH+pU)/6.333)*100)/100,e.permessi,'gg'))
+  return '<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+(cAP>0?bar('Ore a recupero (credito dall\'anno precedente)',c.rec*6.333+c.recH,cAP,'ore'):'<div class="counter"><div>Ore a recupero usate</div><div class="hint">Inserisci il credito dal cartellino per confrontarle</div><div class="mono">'+hm(c.rec*6.333+c.recH)+' ore</div></div>')+bar('Visite, terapie, esami (art. 37), in ore',c.visite*6.333+c.visiteH+vU,e.visiteOre||18,'ore',1)+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',c.form*6.333,e.formOre,'ore',1)+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',c.permessi*6.333+c.permessiH+pU,e.permessi,'ore',1):bar('Permessi personali (giornate)',Math.round((c.permessi+(c.permessiH+pU)/6.333)*100)/100,e.permessi,'gg'))
     +'<div class="counter"><div>Lutto familiare</div><div class="hint">3 giorni per evento, da fruire entro 7 giorni lavorativi dal decesso; non riducono le ferie</div><div class="mono">'+c.lutto+' gg</div></div>'+'<div class="counter"><div>Da classificare</div><div class="hint">Giorni non ancora assegnati a un tipo</div><div class="mono">'+c.nc+' gg</div></div></div>';
 }
 function renderSpe(){
