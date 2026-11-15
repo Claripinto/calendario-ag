@@ -175,7 +175,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 52</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 53</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -1098,6 +1098,7 @@ function printableDoc(){
     const r2=['<tr style="height:'+mm(518)+'"><td class="h">Codice Agenda</td><td class="h">Comune</td><td class="h">Sede</td><td class="h">Dal</td><td class="h">Al</td><td class="h">Motivo<br><span style="font-size:5pt">(utilizzare in caso di motivo diverso per singole date)</span></td></tr>'];
     for(let i=0;i<PER;i++){const r=part[i];const v=r?[codes,'','',r.s,r.e,uniq?'':r.m]:['','','','','',''];
       r2.push('<tr style="height:'+mm(H2[i+1])+'">'+v.map((t,k)=>cell(t,t?fit(t,[13,14,14,12,12,20][k]):8,k===3||k===4)).join('')+'</tr>');}
+    const abm=(x,y,html,extra)=>'<div class="a" style="left:'+x+'mm;top:'+y+'mm;'+(extra||'')+'">'+html+'</div>';
     const ab=(x,y,html,extra)=>'<div class="a" style="left:'+mm(x)+';top:'+mm(y)+';'+(extra||'')+'">'+html+'</div>';
     out+='<div class="pg">'
       +ab(1628,1431,'Azienda USL BR/1')+ab(4421,1450,'Area CUP - Gestione Agende')+ab(8199,1455,'Mod. CUP.BR.003.Dati')
@@ -1106,12 +1107,14 @@ function printableDoc(){
       +table(W1,r1,1536,2583)
       +ab(1645,6661,'Sospensione:','font-weight:bold')
       +table(W2,r2,1512,6735+197)
-      +ab(1494,12700,'<b>Motivo Sospensione</b> <b style="font-size:5pt">(utilizzare se uguale per tutti i giorni di sospensione):</b>'+(uniq?' <span style="font-size:11pt">'+esc(uniq)+'</span>':''))
-      +ab(1494,13050,'<div class="rs">Inaccessibilità alla struttura,<br>Guasto macchina,<br>(indisponibilità personale) Ferie, Congresso, L104, Malattia, ecc.<br>Indisponibilità Materiale dispositivo.</div>')
-      +ab(1494,13950,'<b>Richiedente:</b>'+'_'.repeat(27))
-      +ab(1494,14600,'<b>Riferimento telefonico:</b>'+(s.telefono?'<span style="position:absolute;left:'+mm(2100)+';top:0">'+esc(s.telefono)+'</span>':'')+'_'.repeat(18))
-      +ab(7000,13950,'<b>La Direzione Sanitaria</b>')
-      +ab(6300,14600,'_'.repeat(30))
+      +abm(26.4,227,'Motivo Sospensione <b style="font-size:5pt">(utilizzare se uguale per tutti i giorni di sospensione):</b>')
+      +abm(109,224.6,'_'.repeat(43))
+      +(uniq?abm(109,221.2,esc(uniq),'width:82mm;font-size:11pt'):'')
+      +abm(111.4,228.4,'<div class="rs">Inaccessibilità alla struttura,<br>Guasto macchina,<br>(indisponibilità personale) Ferie, Congresso, L104, Malattia, ecc.<br>Indisponibilità Materiale dispositivo.</div>')
+      +abm(26.4,246.4,'<b>Richiedente:</b>'+'_'.repeat(27))
+      +abm(26.4,255.7,'<b>Riferimento telefonico:</b>'+(s.telefono?'<span style="position:absolute;left:'+mm(2100)+';top:0">'+esc(s.telefono)+'</span>':'')+'_'.repeat(18))
+      +abm(127.5,247.2,'<b>La Direzione Sanitaria</b>','width:60mm;text-align:center')
+      +abm(135.9,257.4,'_'.repeat(22))
       +'</div>';
   }
   return '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Riproiezione / Sospensione agende</title><style>@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font:11pt/1.15 "Times New Roman",Times,serif;color:#000}.pg{position:relative;width:210mm;height:296.5mm;overflow:hidden;page-break-after:always}.pg:last-child{page-break-after:auto}.a{position:absolute;white-space:nowrap}table{position:absolute;border-collapse:collapse;table-layout:fixed}td{border:.2mm solid #000;padding:0 .3mm;overflow:hidden;vertical-align:middle;line-height:1.05}td.h{text-align:center;font-weight:bold;font-size:11pt}.rs{font:bold 6pt/1.25 Arial,Helvetica,sans-serif}</style></head><body>'+out+'</body></html>';
