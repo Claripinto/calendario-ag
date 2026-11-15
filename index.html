@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 27</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 28</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -689,9 +689,24 @@ function formText(){
   t+='\nMotivo sospensione: '+mainMotivo(gs)+'\n'+s.struttura+' - '+s.qualifica+(s.nominativo?' - '+s.nominativo:'')+'\n';
   return t;
 }
+const RQT={ferie:'Ferie, anno corrente',feriep:'Ferie, anno precedente',fest:'Festività soppresse',permesso:'Permesso per motivi personali (art. 34)',congresso:'Partecipazione a congressi/aggiornamento (art. 33)',visita:'Visite, terapie, esami (art. 37)',lutto:'Lutto familiare',l104:'Legge 104'};
+const RQS={bozza:'Bozza',inviata:'Inviata',autorizzata:'Autorizzata',negata:'Negata'};
+function rqDays(a,b){return a&&b&&a<=b?eachDay(a,b).filter(isWorking):[];}
+function renderRichieste(){
+  const L=(state.richieste=state.richieste||[]).slice().sort((x,y)=>x.from<y.from?-1:1);
+  const f=view.rq||{};
+  const n=rqDays(f.from,f.to).length;
+  let h='<div class="card"><h3>Richiesta di ferie o permesso (giustificativo)</h3><div class="hint">Indica il periodo che vuoi chiedere. I giorni complessivi si contano da soli (lunedì–sabato, senza festivi). Salvata la richiesta, chiedimi di compilare il modulo Word.</div>'
+    +'<div class="cols"><label class="f">Dal<input type="date" id="rq-from" value="'+(f.from||'')+'"></label><label class="f">Al<input type="date" id="rq-to" value="'+(f.to||'')+'"></label></div>'
+    +'<label class="f">Tipo<select id="rq-type">'+Object.keys(RQT).map(k=>'<option value="'+k+'"'+((f.type||'ferie')===k?' selected':'')+'>'+RQT[k]+'</option>').join('')+'</select></label>'
+    +'<div class="hint">Giorni complessivi: <b>'+n+'</b></div>'
+    +'<div class="row"><button class="btn primary" data-act="rqsave">Salva richiesta</button><button class="btn" data-act="rqmark">Salva e segna i giorni sul calendario</button></div></div>';
+  h+='<div class="card"><h3>Richieste salvate</h3>'+(L.length?L.map(r=>'<div class="counter"><div><b>'+itDate(r.from)+' – '+itDate(r.to)+'</b><div class="hint">'+esc(RQT[r.type]||r.type)+' · '+rqDays(r.from,r.to).length+' giorni</div></div><div><select data-act="rqstato" data-id="'+r.id+'">'+Object.keys(RQS).map(k=>'<option value="'+k+'"'+(r.stato===k?' selected':'')+'>'+RQS[k]+'</option>').join('')+'</select></div><div><button class="btn small danger" data-act="rqdel" data-id="'+r.id+'">Elimina</button></div></div>').join(''):'<div class="hint">Nessuna richiesta salvata.</div>')+'</div>';
+  return h;
+}
 function renderMod(){
   const gs=groups(state.settings.periodFrom,state.settings.periodTo);
-  let html='<h2>Modulo di riproiezione e sospensione</h2><div class="banner info">Bozza di compilazione con le stesse colonne del modulo dell\'area CUP. Riportala sul modulo ufficiale e falla firmare: qui non ci sono firme né timbri. Si compila da sola dalle date del calendario.</div>';
+  let html=renderRichieste()+'<h2>Modulo di riproiezione e sospensione</h2><div class="banner info">Bozza di compilazione con le stesse colonne del modulo dell\'area CUP. Riportala sul modulo ufficiale e falla firmare: qui non ci sono firme né timbri. Si compila da sola dalle date del calendario.</div>';
   html+='<div class="row" style="margin:8px 0"><button class="btn primary" data-act="copyform">Copia come testo</button>'
     +(downloads?'<button class="btn" data-act="dlhtml">Scarica versione da stampare</button><button class="btn" data-act="dlcsv">Scarica CSV</button>':'')
     +'<span class="hint">'+gs.length+' righe di sospensione</span></div>';
@@ -826,6 +841,17 @@ function clickHandler(ev){
     const n=Math.max(0,parseInt(document.getElementById('booked').value,10)||0);
     sel.forEach((d,i)=>{state.entries[d].booked=i===0?n:0;});save();render();toast('Numero salvato');
   }
+  else if(a==='rqsave'||a==='rqmark'){
+    const g=id=>(document.getElementById(id)||{}).value||'';
+    const r={id:'r'+Date.now(),from:g('rq-from'),to:g('rq-to'),type:g('rq-type')||'ferie',stato:'bozza'};
+    view.rq={from:r.from,to:r.to,type:r.type};
+    if(!r.from||!r.to||r.from>r.to){toast('Controlla le date: Dal deve essere prima di Al');render();return;}
+    const days=rqDays(r.from,r.to);if(!days.length){toast('Nel periodo non ci sono giorni lavorativi');return;}
+    state.richieste=state.richieste||[];state.richieste.push(r);
+    if(a==='rqmark'){days.forEach(d=>{state.entries[d]={type:r.type,booked:0};});state.imported=Object.values(state.entries).some(e=>e.type==='nc');}
+    save();render();toast('Richiesta salvata ('+days.length+' giorni)');return;
+  }
+  else if(a==='rqdel'){state.richieste=(state.richieste||[]).filter(r=>r.id!==b.dataset.id);save();render();return;}
   else if(a==='remove'){selDays().forEach(d=>{delete state.entries[d];});state.imported=Object.values(state.entries).some(e=>e.type==='nc');save();render();}
   else if(a==='clearsel'){view.anchor=null;view.end=null;render();}
   else if(a==='gocal'){const d=b.dataset.day;view.tab='cal';view.y=+d.slice(0,4);view.m=+d.slice(5,7)-1;view.anchor=d;view.end=null;render();window.scrollTo(0,0);}
@@ -864,6 +890,8 @@ document.addEventListener('change',ev=>{
   const t=ev.target;
   if(t.id==='bkfile'){importBackup(t.files&&t.files[0]);t.value='';return;}
   if(t.dataset.act==='year'){view.year=+t.value;render();return;}
+  if(t.id==='rq-from'||t.id==='rq-to'||t.id==='rq-type'){const g=id=>(document.getElementById(id)||{}).value||'';view.rq={from:g('rq-from'),to:g('rq-to'),type:g('rq-type')||'ferie'};render();return;}
+  if(t.dataset.act==='rqstato'){const r=(state.richieste||[]).find(x=>x.id===t.dataset.id);if(r){r.stato=t.value;save();}return;}
   if(t.dataset.act==='permunit'){state.settings.ent.permessiUnit=t.value;state.settings.ent.permessi=t.value==='ore'?18:3;save();render();return;}
   if(t.dataset.act==='proj'){
     if(t.value){const y=+t.value;state.settings.periodFrom=y+'-07-01';state.settings.periodTo=(y+1)+'-06-30';hcache={};view.y=y;view.m=6;view.year=y;save();render();toast('Periodo: luglio '+y+' – giugno '+(y+1));}
