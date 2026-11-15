@@ -174,7 +174,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 45</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 46</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -550,8 +550,8 @@ function verdictsHTML(items){
 function sumStrip(y){
   const c=counters(y),e=state.settings.ent,yr=yrData(y),fAP=ferieAPof(y).v,fU=+yr.ferieUsate||0,vU=+yr.visOre||0,pU=+yr.permOre||0;
   const r1=v=>Math.round(v*10)/10;
-  const it=[['Ferie',c.ferie,e.ferie],['Residue',c.feriep+fU,fAP],['Festività',c.fest,e.fest],['Visite h',r1(c.visite*6.333+c.visiteH+vU),e.visiteOre||18],['Permessi',e.permessiUnit==='ore'?r1(c.permessi*6.333+c.permessiH+pU):r1(c.permessi+(c.permessiH+pU)/6.333),e.permessi],['Congressi',c.agg,e.agg]];
-  return '<div class="sumstrip" aria-label="Spettanze '+y+'">'+it.map(x=>'<span class="ch '+(x[2]>0&&x[1]>x[2]?'bad':(x[2]>0&&x[1]>=x[2]*0.9?'warn':''))+'">'+x[0]+' '+x[1]+'/'+x[2]+'</span>').join('')+'</div>';
+  const it=[['Ferie',c.ferie,e.ferie],['Residue',c.feriep+fU,fAP],['Festività',c.fest,e.fest],['Visite h',c.visite*6.333+c.visiteH+vU,e.visiteOre||18,1],['Permessi',e.permessiUnit==='ore'?c.permessi*6.333+c.permessiH+pU:r1(c.permessi+(c.permessiH+pU)/6.333),e.permessi,e.permessiUnit==='ore'?1:0],['Congressi',c.agg,e.agg]];
+  return '<div class="sumstrip" aria-label="Spettanze '+y+'">'+it.map(x=>'<span class="ch '+(x[2]>0&&x[1]>x[2]?'bad':(x[2]>0&&x[1]>=x[2]*0.9?'warn':''))+'">'+x[0]+' '+(x[3]?hm(x[1])+'/'+hm(x[2]):x[1]+'/'+x[2])+'</span>').join('')+'</div>';
 }
 function renderCal(){
   const y=view.y,m=view.m,first=iso(y,m,1),dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(),sd=new Set(selDays());
@@ -677,15 +677,17 @@ function ferieAPof(y){
   }
   return {v:0,auto:false};
 }
+function hm(v){const m=Math.round((+v||0)*60+1e-6),h=Math.floor(m/60),mm=m%60;return h+':'+String(mm).padStart(2,'0');}
 function bar(label,used,tot,unit){
-  if(!(tot>0))return '<div class="counter"><div>'+esc(label)+'</div><div class="hint">Spettanza da impostare</div><div class="mono">'+used+' '+unit+'</div></div>';
+  const H=unit==='ore',F=H?hm:(x=>x);
+  if(!(tot>0))return '<div class="counter"><div>'+esc(label)+'</div><div class="hint">Spettanza da impostare</div><div class="mono">'+F(used)+' '+unit+'</div></div>';
   const pct=Math.min(100,Math.round(used*100/tot)),cls=used>tot?'bad':(used>=tot*0.9?'warn':'');
   const rest=tot-used;
-  return '<div class="counter"><div>'+esc(label)+'</div><div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div><div class="mono">'+used+' / '+tot+' '+(rest<0?'<span class="chip bad">oltre di '+(-rest)+'</span>':'<span class="hint">restano '+rest+'</span>')+'</div></div>';
+  return '<div class="counter"><div>'+esc(label)+'</div><div><div class="bar '+cls+'"><i style="width:'+pct+'%"></i></div></div><div class="mono">'+F(used)+' / '+F(tot)+' '+(rest<0?'<span class="chip bad">oltre di '+F(-rest)+'</span>':'<span class="hint">restano '+F(rest)+'</span>')+'</div></div>';
 }
 function spCard(y,compact){
   const c=counters(y),e=state.settings.ent,yr=yrData(y),fAP=ferieAPof(y).v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0,vU=+yr.visOre||0,cAP=+yr.creditoAP||0;
-  return '<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+(cAP>0?bar('Ore a recupero (credito dall\'anno precedente)',Math.round((c.rec*6.333+c.recH)*10)/10,cAP,'ore'):'<div class="counter"><div>Ore a recupero usate</div><div class="hint">Inserisci il credito dal cartellino per confrontarle</div><div class="mono">'+(Math.round((c.rec*6.333+c.recH)*10)/10)+' ore</div></div>')+bar('Visite, terapie, esami (art. 37), in ore',Math.round((c.visite*6.333+c.visiteH+vU)*10)/10,e.visiteOre||18,'ore')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',Math.round(c.form*6.333*10)/10,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',Math.round((c.permessi*6.333+c.permessiH+pU)*10)/10,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+(c.permessiH+pU)/6.333)*100)/100,e.permessi,'gg'))
+  return '<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+(cAP>0?bar('Ore a recupero (credito dall\'anno precedente)',c.rec*6.333+c.recH,cAP,'ore'):'<div class="counter"><div>Ore a recupero usate</div><div class="hint">Inserisci il credito dal cartellino per confrontarle</div><div class="mono">'+hm(c.rec*6.333+c.recH)+' ore</div></div>')+bar('Visite, terapie, esami (art. 37), in ore',c.visite*6.333+c.visiteH+vU,e.visiteOre||18,'ore')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',c.form*6.333,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',c.permessi*6.333+c.permessiH+pU,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+(c.permessiH+pU)/6.333)*100)/100,e.permessi,'gg'))
     +'<div class="counter"><div>Lutto familiare</div><div class="hint">3 giorni per evento, da fruire entro 7 giorni lavorativi dal decesso; non riducono le ferie</div><div class="mono">'+c.lutto+' gg</div></div>'+'<div class="counter"><div>Da classificare</div><div class="hint">Giorni non ancora assegnati a un tipo</div><div class="mono">'+c.nc+' gg</div></div></div>';
 }
 function renderSpe(){
