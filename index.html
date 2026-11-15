@@ -76,7 +76,8 @@ h3{font-size:15px;margin:0 0 6px;font-weight:600}
 .calhead{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0}
 .calhead .title{font-size:18px;font-weight:600;min-width:170px;text-align:center}
 .sumstrip{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}.sumstrip .ch{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12.5px;white-space:nowrap}.sumstrip .ch.warn{border-color:var(--warn)}.sumstrip .ch.bad{border-color:var(--bad)}
-.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;user-select:none;-webkit-user-select:none}
+.tbtn.on{outline:2px solid var(--accent);background:var(--surface2)}
 .dow{font-size:12px;color:var(--muted);text-align:center;padding:2px 0;font-weight:500}
 .cell{position:relative;min-height:56px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:4px;text-align:left;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
 .cell.empty{border:none;background:transparent;cursor:default}
@@ -172,7 +173,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 40</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 41</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -262,7 +263,7 @@ function defaults(){
 let state=defaults();
 function purgeNW(){Object.keys(state.entries).forEach(d=>{if(!isWorking(d))delete state.entries[d];});}
 purgeNW();
-const view={tab:'cal',y:2027,m:6,anchor:null,end:null,includeNW:false,year:2027,msg:'',manual:'',resetStep:0};
+const view={brush:false,brushType:null,tab:'cal',y:2027,m:6,anchor:null,end:null,includeNW:false,year:2027,msg:'',manual:'',resetStep:0};
 view.y=+state.settings.periodFrom.slice(0,4);view.m=+state.settings.periodFrom.slice(5,7)-1;view.year=view.y;
 
 /* ============ salvataggio ============ */
@@ -504,6 +505,24 @@ function monthStats(y,m){
 }
 
 /* ============ selezione ============ */
+function paintDays(days){
+  days=days.filter(isWorking);if(!days.length||!view.brushType)return;
+  const T=view.brushType;
+  if(days.length===1&&state.entries[days[0]]&&state.entries[days[0]].type===T){delete state.entries[days[0]];}
+  else days.forEach(d=>{state.entries[d]={type:T,booked:0};});
+  state.imported=Object.values(state.entries).some(e=>e.type==='nc');
+  save();render();
+}
+let dragSt=null;
+document.addEventListener('pointerdown',ev=>{if(ev.pointerType!=='mouse'||ev.button!==0||view.tab!=='cal')return;const c=ev.target.closest&&ev.target.closest('[data-act="day"]');if(c)dragSt={start:c.dataset.day,cur:c.dataset.day,moved:false};});
+document.addEventListener('pointermove',ev=>{if(!dragSt)return;const el=document.elementFromPoint(ev.clientX,ev.clientY),c=el&&el.closest&&el.closest('[data-act="day"]');if(c&&c.dataset.day!==dragSt.cur){dragSt.cur=c.dataset.day;dragSt.moved=true;}});
+document.addEventListener('pointerup',()=>{
+  if(!dragSt)return;const d=dragSt;dragSt=null;if(!d.moved)return;
+  view.dragSkip=true;setTimeout(()=>{view.dragSkip=false;},80);
+  const a=d.start<d.cur?d.start:d.cur,b=d.start<d.cur?d.cur:d.start;
+  if(view.brush&&view.brushType){paintDays(eachDay(a,b));}
+  else{view.anchor=d.start;view.end=d.cur;render();}
+});
 function selDays(){
   if(!view.anchor)return [];
   const a=view.anchor,b=view.end||view.anchor;
@@ -552,7 +571,6 @@ function renderCal(){
   const legend=visibleTypes().map(k=>'<span><span class="badge t-'+k+'">'+TYPES[k].short+'</span>'+esc(TYPES[k].label)+'</span>').join('');
   const nc=Object.values(state.entries).filter(e=>e.type==='nc').length;
   let html='';
-  if(state.imported&&nc>0)html+='<div class="banner info">Ho caricato le sospensioni dal modulo del 09/11 (luglio 2027 – giugno 2028) come "Da classificare". Controlla le date e assegna a ciascuna il tipo giusto (ferie, congresso, permesso…), così i conteggi diventano affidabili.</div>';
   html+='<div class="calhead"><button class="btn" data-act="prev" aria-label="Mese precedente">‹</button><div class="title">'+MONTHS[m]+' '+y+'</div><button class="btn" data-act="next" aria-label="Mese successivo">›</button></div>';
   html+='<div class="row" style="margin-bottom:6px"><button class="btn small" data-act="goperiod">Vai a inizio proiezione</button><button class="btn small" data-act="gotoday">Oggi</button></div>';
   html+=sumStrip(y)+'<div class="calx"><div class="calmain">';
@@ -569,9 +587,10 @@ function pickBar(){
   const sel=selDays(),on=sel.length>0;
   const has=sel.some(d=>state.entries[d]);
   const clr='<button class="tbtn" data-act="clear"'+(has?'':' disabled')+' style="border-color:var(--bad,#c0392b)"><span class="badge">✕</span><span>Togli il segno</span></button>';
-  const types=clr+visibleTypes().map(k=>'<button class="tbtn" data-act="apply" data-type="'+k+'"'+(on?'':' disabled')+'><span class="badge t-'+k+'">'+TYPES[k].short+'</span><span>'+esc(TYPES[k].label)+'</span></button>').join('');
-  const lab=on?('<b>'+(sel.length===1?itDate(sel[0]):itDate(sel[0])+' – '+itDate(sel[sel.length-1]))+'</b> · '+sel.length+(sel.length===1?' giorno lavorativo':' giorni lavorativi')+'. Scegli il tipo, oppure togli il segno:'):'<b>Legenda.</b> Tocca un giorno (o due, per un periodo) e poi il tipo da assegnare.';
-  return (on?'<div class="pspacer" style="height:120px"></div>':'<div class="pspacer"></div>')+'<div class="pick'+(on?'':' idle')+'"><div class="in"><div class="lbl">'+lab+'</div><div class="sc">'+types+'</div></div></div>';
+  const brushBtn='<button class="tbtn'+(view.brush?' on':'')+'" data-act="brushtoggle"><span class="badge">✎</span><span>Pennello: '+(view.brush?'attivo':'spento')+'</span></button>';
+  const types=brushBtn+clr+visibleTypes().map(k=>'<button class="tbtn'+(view.brush&&view.brushType===k?' on':'')+'" data-act="apply" data-type="'+k+'"'+(on||view.brush?'':' disabled')+'><span class="badge t-'+k+'">'+TYPES[k].short+'</span><span>'+esc(TYPES[k].label)+'</span></button>').join('');
+  const lab=on?('<b>'+(sel.length===1?itDate(sel[0]):itDate(sel[0])+' – '+itDate(sel[sel.length-1]))+'</b> · '+sel.length+(sel.length===1?' giorno lavorativo':' giorni lavorativi')+'. Scegli il tipo, oppure togli il segno:'):(view.brush?'<b>Pennello attivo.</b> '+(view.brushType?'Tipo: '+esc(TYPES[view.brushType].label)+'. Tocca o trascina sui giorni per segnarli (tocca un giorno già segnato per toglierlo).':'Scegli un tipo, poi tocca o trascina sui giorni.'):'<b>Legenda.</b> Tocca un giorno (o due, per un periodo), oppure trascina con il mouse, e poi scegli il tipo. Con il pennello segni più giorni di seguito.');
+  return ((on||view.brush)?'<div class="pspacer" style="height:120px"></div>':'<div class="pspacer"></div>')+'<div class="pick'+((on||view.brush)?'':' idle')+'"><div class="in"><div class="lbl">'+lab+'</div><div class="sc">'+types+'</div></div></div>';
 }
 function renderSel(){
   const sel=selDays();
@@ -1044,12 +1063,15 @@ function clickHandler(ev){
   else if(a==='goperiod'){view.y=+state.settings.periodFrom.slice(0,4);view.m=+state.settings.periodFrom.slice(5,7)-1;render();}
   else if(a==='day'){
     const d=b.dataset.day;
+    if(view.dragSkip){return;}
     if(!isWorking(d))return;
+    if(view.brush&&view.brushType){paintDays([d]);return;}
     if(!view.anchor||view.end){view.anchor=d;view.end=null;}
     else{view.end=d;}
     render();
   }
-  else if(a==='apply')applyType(b.dataset.type);
+  else if(a==='brushtoggle'){view.brush=!view.brush;if(!view.brush)view.brushType=null;view.anchor=null;view.end=null;render();}
+  else if(a==='apply'){if(view.brush){view.brushType=b.dataset.type;const sd=selDays();if(sd.length)applyType(b.dataset.type);else{render();toast('Pennello: '+TYPES[view.brushType].label);}}else applyType(b.dataset.type);}
   else if(a==='clear')clearDays();
   else if(a==='savebooked'){
     const sel=selDays().filter(d=>state.entries[d]);if(!sel.length)return;
