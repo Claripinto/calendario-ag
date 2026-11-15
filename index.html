@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 38</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 39</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -910,9 +910,6 @@ function renderModPeriodo(){
 function renderMod(){
   const R=modR(),gs=groups(R.from,R.to);
   let html=renderRiepilogo()+renderPersona()+renderRichieste()+'<h2>Modulo di riproiezione e sospensione</h2>'+renderModPeriodo()+'<div class="banner info">Bozza di compilazione con le stesse colonne del modulo dell\'area CUP. Riportala sul modulo ufficiale e falla firmare: qui non ci sono firme né timbri. Si compila da sola dalle date del calendario.</div>';
-  html+='<div class="row" style="margin:8px 0"><button class="btn primary" data-act="copyform">Copia come testo</button>'
-    +(downloads?'<button class="btn" data-act="dlhtml">Scarica versione da stampare</button><button class="btn" data-act="dlcsv">Scarica CSV</button>':'')
-    +'<span class="hint">'+gs.length+' righe di sospensione</span></div>';
   html+='<div class="scroll"><div class="paper">'+formHTML()+'</div></div>';
   if(view.manual)html+='<div class="card"><h3>Copia a mano</h3><textarea class="manual" readonly id="manualbox">'+esc(view.manual)+'</textarea></div>';
   return html;
