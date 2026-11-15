@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 31</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 32</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -741,25 +741,34 @@ async function buildRequestDocx(row){
   });
   beforeTab(ps[4],0,' '+itDate(row.a));beforeTab(ps[4],1,' '+itDate(row.b));beforeTab(ps[5],0,' '+row.n);
   if(spec.b){const r=mkrun('\u2612  n. '+row.n+(row.n===1?' giorno':' giorni')+' di festività soppresse',ps[11].getElementsByTagNameNS(NS,'r')[0]);const rp=Array.from(r.children).find(c=>c.localName==='rPr');if(rp)Array.from(rp.children).forEach(c=>{if(['b','bCs','bdr'].includes(c.localName)||c.localName==='sz'||c.localName==='szCs')rp.removeChild(c);});ps[12].appendChild(r);}
-  else if(spec.a||spec.c){const q=ps[spec.a||spec.c];Array.from(q.getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent==='\u2610')t.textContent='\u2612';});}
+  else if(spec.a||spec.c){if(RQMOT[row.t]&&spec.c===24)beforeTab(ps[25],0,RQMOT[row.t]);const q=ps[spec.a||spec.c];Array.from(q.getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent==='\u2610')t.textContent='\u2612';});}
   doc.data=new TextEncoder().encode(new XMLSerializer().serializeToString(xml));
   return zipStore(files);
 }
+const RQMOT={visita:'Visite, terapie, esami diagnostici (art. 37 CCNL)'};
 function requestHTML(row){
-  const pr=personOf(),spec=RQF[row.t]||{},ck=(on)=>on?'☒':'☐';
-  const C=[[15,'partecipazione a concorsi/esami/aggiorn.'],[16,'lutto familiare'],[17,'particolari motivi personali/familiari (compresa la nascita del figlio)'],[19,'matrimonio'],[20,'Legge 5.2.1992, n. 104'],[21,'art. 16 CCNL/2000 (dirigenza)'],[22,'mandato amministrativo (D.Lgs. 267/2000)'],[23,'funzioni elettorali (T.U. 361/1957)'],[24,'altro caso previsto dalla normativa vigente']];
-  const ln=(v,w)=>'<span style="display:inline-block;min-width:'+w+'px;border-bottom:1px solid #000;padding:0 4px">'+esc(v||'')+'&nbsp;</span>';
-  return '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Richiesta ferie e permessi</title><style>@page{size:A4;margin:12mm 14mm}body{font:15px/1.7 "Times New Roman",serif;color:#000;margin:0}.box{border:1px solid #000;padding:6px 10px;margin:8px 0;display:flex;justify-content:space-between}.box b{font-size:14px}.r{margin-left:120px}</style></head><body>'
-   +'<div style="text-align:center"><img src="data:image/png;base64,'+LOGO_B64+'" style="height:100px"></div>'
-   +'<div style="margin-left:55%;margin-top:30px">Al Dirigente responsabile<br>di '+ln(pr.dirig,230)+'</div>'
-   +'<p style="margin-top:28px">Il/La sottoscritt__ '+ln(pr.nome,260)+', matr. '+ln(pr.matr,80)+', in servizio presso '+ln(pr.struttura,200)+', in qualità di '+ln(pr.qual,170)+',<br><b>CHIEDE</b> di poter usufruire per il periodo dal '+ln(itDate(row.a),100)+' al '+ln(itDate(row.b),100)+' di<br>complessivi n. '+ln(String(row.n),50)+' giorni di:</p>'
-   +'<div class="box"><b>A &nbsp;Ferie</b><div class="r">'+ck(spec.a===8)+' relativi al corrente anno<br>'+ck(spec.a===9)+' relativi al decorso anno</div></div>'
-   +'<div class="box"><b>B &nbsp;Festività soppresse</b><div class="r">'+(spec.b?'☒ n. '+row.n+(row.n===1?' giorno':' giorni'):'')+'</div></div>'
-   +'<div class="box"><b>C &nbsp;Permessi retribuiti</b><div class="r">'+C.map(c=>ck(spec.c===c[0])+' '+c[1]).join('<br>')+'</div></div>'
-   +'<p style="font-size:11px;line-height:1.3"><b>N.B.:</b> - Allegare documentazione giustificativa<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- La semplice presentazione della domanda non legittima il/la dipendente ad astenersi dal lavoro</p>'
-   +'<p style="margin-top:22px">Data '+ln('',130)+'<span style="float:right;margin-right:60px">Con osservanza '+ln('',170)+'</span></p>'
-   +'<p style="text-align:center;font-weight:bold;margin:18px 0 6px">SI AUTORIZZA</p>'
-   +'<p>Il Dirigente resp. U.O./Uff./Serv. '+ln('',150)+'<span style="float:right">Il Dirigente '+ln('',170)+'</span></p></body></html>';
+  const pr=personOf(),spec=RQF[row.t]||{},ck=on=>on?'☒':'☐',mot=RQMOT[row.t]||'';
+  const C=[[15,'partecipazione a concorsi/esami/aggiorn.'],[16,'lutto familiare'],[17,'particolari motivi personali/familiari<br>&nbsp;&nbsp;&nbsp;&nbsp;(compresa la nascita del figlio)'],[19,'matrimonio'],[20,'Legge 5.2.1992, n. 104'],[21,'art. 16 CCNL/2000 (dirigenza)'],[22,'mandato amministrativo (D.Lgs. 267/2000)'],[23,'funzioni elettorali (T.U. 361/1957)'],[24,'altro caso previsto dalla normativa vigente']];
+  const ul=(v,w)=>'<span class="ul" style="min-width:'+w+'mm">'+esc(v||'')+'</span>';
+  const lab=(l,t)=>'<span class="lt">'+l+'</span>&nbsp;<b>'+t+'</b>';
+  return '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Richiesta ferie e permessi</title><style>'
+   +'@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font:11.5pt/1.5 "Times New Roman",Times,serif;color:#000}'
+   +'.pg{width:210mm;height:296mm;padding:5mm 13mm 0 13mm;position:relative;overflow:hidden}'
+   +'.ul{display:inline-block;border-bottom:.3mm solid #000;padding:0 1mm;vertical-align:baseline;min-height:1.2em}'
+   +'.box{border:.3mm solid #000;display:flex;margin-top:3.7mm;padding:1.5mm 2.5mm}.box .l{width:101mm;flex:none}.box .o{flex:1;font-size:10.5pt;line-height:1.35}'
+   +'.lt{display:inline-block;border:.3mm solid #000;font-size:7pt;font-weight:bold;padding:0 .6mm;line-height:1.3}'
+   +'.mot{border-bottom:.3mm solid #000;margin:1.2mm 0 0 4mm;min-height:5mm;font-size:9.5pt}'
+   +'</style></head><body><div class="pg">'
+   +'<div style="text-align:center"><img src="data:image/png;base64,'+LOGO_B64+'" style="height:42mm"></div>'
+   +'<div style="margin:5mm 0 0 102mm;line-height:1.7">Al Dirigente responsabile<br>di '+ul(pr.dirig,64)+'</div>'
+   +'<div style="margin-top:7mm;line-height:1.85">Il/La sottoscritt__ '+ul(pr.nome,62)+', matr. '+ul(pr.matr,20)+', in servizio presso<br>'+ul(pr.struttura,50)+', in qualità di '+ul(pr.qual,45)+',<br><b>CHIEDE</b> di poter usufruire per il periodo dal '+ul(itDate(row.a),26)+' al '+ul(itDate(row.b),26)+' di<br>complessivi n. '+ul(String(row.n),14)+' giorni di:</div>'
+   +'<div class="box" style="margin-top:4mm"><div class="l">'+lab('A','Ferie')+'</div><div class="o">'+ck(spec.a===8)+' relativi al corrente anno<br>'+ck(spec.a===9)+' relativi al decorso anno</div></div>'
+   +'<div class="box"><div class="l">'+lab('B','Festività soppresse')+'</div><div class="o">'+(spec.b?'☒ n. '+row.n+(row.n===1?' giorno':' giorni'):'')+'</div></div>'
+   +'<div class="box" style="min-height:84mm"><div class="l">'+lab('C','Permessi retribuiti')+'</div><div class="o">'+C.map(c=>ck(spec.c===c[0])+' '+c[1]+(c[0]===24?'<div class="mot">'+esc(mot)+'</div>':'')).join('<br>').replace(/<br><div/,'<div')+'</div></div>'
+   +'<div style="font-size:7.5pt;line-height:1.3;margin-top:2mm"><b>N.B.:</b> - Allegare documentazione giustificativa<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- La semplice presentazione della domanda non legittima il/la dipendente ad astenersi dal lavoro</div>'
+   +'<div style="margin-top:6mm">Data '+ul('',48)+'<span style="margin-left:48mm">Con osservanza '+ul('',50)+'</span></div>'
+   +'<div style="text-align:center;font-weight:bold;margin-top:5mm">SI AUTORIZZA</div>'
+   +'<div style="margin-top:2mm;display:flex;justify-content:space-between"><span>Il Dirigente resp. U.O./Uff./Serv. '+ul('',50)+'</span><span style="margin-right:8mm">Il Dirigente '+ul('',50)+'</span></div></div></body></html>';
 }
 function requestsHTML(rows){
   const hs=rows.map(requestHTML),head=hs[0].slice(0,hs[0].indexOf('<body>')+6);
