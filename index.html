@@ -174,7 +174,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 43</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 44</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -614,6 +614,7 @@ function renderSel(){
     +'<div class="row" style="align-items:flex-end"><button class="btn" data-act="savebooked"'+(withEntry.length?'':' disabled')+'>Salva numero pazienti</button></div></div>'
     +'<div class="cols"><label class="f">Se è un permesso o una visita a ore: ore (vuoto = giornata intera)<input type="text" inputmode="decimal" id="hrs" placeholder="es. 4:41 o 2,5" value="'+(first&&first.h?first.h:'')+'"></label>'
     +'<label class="f">Il resto della giornata<select id="t2"><option value="">Nessuno</option><option value="permesso"'+(first&&first.t2==='permesso'?' selected':'')+'>Permesso personale (art. 34)</option><option value="recupero"'+(first&&first.t2==='recupero'?' selected':'')+'>Ore a recupero (eccedenti)</option><option value="visita"'+(first&&first.t2==='visita'?' selected':'')+'>Visite, terapie, esami (art. 37)</option></select></label></div>'
+    +'<div class="row"><button class="btn" data-act="savehrs"'+(withEntry.length?'':' disabled')+'>Salva ore</button></div>'
     +'<div class="hint">Giornata convenzionale: 6 ore e 20. Le ore del resto si calcolano da sole. L\'art. 37 non si somma nello stesso giorno ai permessi personali a ore.</div>'
     +'<div class="row"><button class="btn danger" data-act="remove"'+(withEntry.length?'':' disabled')+'>Rimuovi la sospensione dai giorni selezionati</button><button class="btn" data-act="clearsel">Annulla selezione</button></div>';
   if(g)html+='<h3 style="margin-top:14px">Esito per questa sospensione</h3>'+verdictsHTML(verdictFor(g));
@@ -1025,6 +1026,13 @@ function setPath(path,val){
   o[p[p.length-1]]=val;
 }
 function parseHrs(v){v=String(v||'').trim().replace(',','.');if(!v)return 0;if(v.indexOf(':')>-1){const a=v.split(':');return Math.round(((+a[0]||0)+(+a[1]||0)/60)*100)/100;}return Math.round((+v||0)*100)/100;}
+function saveHrs(close){
+  const sel=selDays().filter(d=>state.entries[d]);if(!sel.length){toast('Prima segna il tipo sul giorno');return;}
+  const hv=parseHrs((document.getElementById('hrs')||{}).value),t2=(document.getElementById('t2')||{}).value||'';
+  sel.forEach(d=>{const en=state.entries[d];delete en.h;delete en.t2;delete en.h2;
+    if(hv>0&&hv<6.34){en.h=hv;if(t2&&t2!==en.type){en.t2=t2;en.h2=Math.round((6.333-hv)*100)/100;}}});
+  if(close)view.modal=false;save();render();toast(hv>0?'Ore salvate: '+hv+' h':'Giornata intera');
+}
 function applyType(type){
   const sel=selDays();if(!sel.length)return;
   const target=sel;
@@ -1080,6 +1088,7 @@ function clickHandler(ev){
     else{view.end=d;}
     render();
   }
+  else if(a==='savehrs'){saveHrs(true);}
   else if(a==='mclose'){view.modal=false;render();}
   else if(a==='mpick'){view.mpick=!view.mpick;render();}
   else if(a==='brushtoggle'){view.brush=!view.brush;if(!view.brush)view.brushType=null;view.anchor=null;view.end=null;render();}
