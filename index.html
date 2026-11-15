@@ -154,7 +154,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 24</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 25</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -633,12 +633,13 @@ function renderSpe(){
   const c=counters(view.year),e=state.settings.ent;
   let html='<h2>Spettanze</h2><div class="hint">Conteggio per anno solare dei giorni lavorativi segnati. Le ferie maturano per anno solare, mentre la proiezione delle agende va da luglio a giugno.</div>';
   html+='<label class="f" style="max-width:200px">Anno<select data-act="year">'+years.map(y=>'<option value="'+y+'"'+(y===view.year?' selected':'')+'>'+y+'</option>').join('')+'</select></label>';
-  const yr=yrData(view.year),FA=ferieAPof(view.year),fAP=FA.v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0,vU=+yr.visOre||0;
-  html+='<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+'<div class="counter"><div>Ore a recupero usate</div><div class="hint">Ore eccedenti maturate durante l\'anno</div><div class="mono">'+(Math.round((c.rec*6.333+c.recH)*10)/10)+' ore</div></div>'+bar('Visite, terapie, esami (art. 37), in ore',Math.round((c.visite*6.333+c.visiteH+vU)*10)/10,e.visiteOre||18,'ore')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',Math.round(c.form*6.333*10)/10,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',Math.round((c.permessi*6.333+c.permessiH+pU)*10)/10,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+(c.permessiH+pU)/6.333)*100)/100,e.permessi,'gg'))
+  const yr=yrData(view.year),FA=ferieAPof(view.year),fAP=FA.v,fU=+yr.ferieUsate||0,pU=+yr.permOre||0,vU=+yr.visOre||0,cAP=+yr.creditoAP||0;
+  html+='<div class="card">'+bar('Ferie dell\'anno (32 gg su sei giorni)',c.ferie,e.ferie,'gg')+bar('Ferie anni precedenti (residue)',c.feriep+fU,fAP,'gg')+bar('Festività soppresse',c.fest,e.fest,'gg')+(cAP>0?bar('Ore a recupero (credito dall\'anno precedente)',Math.round((c.rec*6.333+c.recH)*10)/10,cAP,'ore'):'<div class="counter"><div>Ore a recupero usate</div><div class="hint">Inserisci il credito dal cartellino per confrontarle</div><div class="mono">'+(Math.round((c.rec*6.333+c.recH)*10)/10)+' ore</div></div>')+bar('Visite, terapie, esami (art. 37), in ore',Math.round((c.visite*6.333+c.visiteH+vU)*10)/10,e.visiteOre||18,'ore')+bar('Congressi e aggiornamento (art. 33)',c.agg,e.agg,'gg')+bar('Formazione: 4 ore settimanali (art. 45), in ore',Math.round(c.form*6.333*10)/10,e.formOre,'ore')+(e.permessiUnit==='ore'?bar('Permessi personali (ore)',Math.round((c.permessi*6.333+c.permessiH+pU)*10)/10,e.permessi,'ore'):bar('Permessi personali (giornate)',Math.round((c.permessi+(c.permessiH+pU)/6.333)*100)/100,e.permessi,'gg'))
     +'<div class="counter"><div>Da classificare</div><div class="hint">Giorni non ancora assegnati a un tipo</div><div class="mono">'+c.nc+' gg</div></div></div>';
   html+='<div class="card"><h3>Dal cartellino, anno '+view.year+'</h3><div class="hint">Dati già maturati o usati che non sono segnati nel calendario. Ferie residue: si sommano alle ferie dell\'anno; se inserisci residue e ferie fruite di un anno, l\'anno dopo riceve il riporto in automatico (puoi sempre correggerlo a mano). Permessi: ore già usate (formato 7:55 oppure 7.9).</div>'
     +'<label class="f">Ferie residue da anni precedenti (giorni)'+(FA.auto?' · calcolate dal consuntivo '+(view.year-1):'')+'<input type="number" min="0" step="0.5" data-yr="ferieAP" value="'+fAP+'"></label>'
     +'<label class="f">Ferie già fruite non segnate nel calendario (giorni, tolte dalle residue)<input type="number" min="0" step="0.5" data-yr="ferieUsate" value="'+(fU||'')+'" placeholder="0"></label>'
+    +'<label class="f">Credito ore dall\'anno precedente ("Credito precedente" del cartellino)<input type="text" inputmode="decimal" data-yr="creditoAP" value="'+(cAP?(Math.floor(cAP)+':'+String(Math.round((cAP%1)*60)).padStart(2,'0')):'')+'" placeholder="es. 502:45"></label>'
     +'<label class="f">Ore già usate per visite, terapie, esami (art. 37)<input type="text" inputmode="decimal" data-yr="visOre" value="'+(vU?(Math.floor(vU)+':'+String(Math.round((vU%1)*60)).padStart(2,'0')):'')+'" placeholder="es. 3:30"></label>'
     +'<label class="f">Permessi personali già usati (ore)<input type="text" inputmode="decimal" data-yr="permOre" value="'+(pU?(Math.floor(pU)+':'+String(Math.round((pU%1)*60)).padStart(2,'0')):'')+'" placeholder="es. 7:55"></label></div>';
   if(e.l104Month>0){
@@ -863,7 +864,7 @@ document.addEventListener('change',ev=>{
   }
   if(t.dataset.yr){
     let v=t.value.trim().replace(',','.');
-    if((t.dataset.yr==='permOre'||t.dataset.yr==='visOre')&&v.indexOf(':')>-1){const q=v.split(':');v=(parseInt(q[0],10)||0)+(parseInt(q[1],10)||0)/60;}
+    if((t.dataset.yr==='permOre'||t.dataset.yr==='visOre'||t.dataset.yr==='creditoAP')&&v.indexOf(':')>-1){const q=v.split(':');v=(parseInt(q[0],10)||0)+(parseInt(q[1],10)||0)/60;}
     v=Math.max(0,parseFloat(v)||0);
     const E=state.settings.ent;E.yr=E.yr||{};E.yr[view.year]=E.yr[view.year]||{};E.yr[view.year][t.dataset.yr]=v;
     save();render();return;
