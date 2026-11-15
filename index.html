@@ -163,7 +163,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 34</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 35</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -733,25 +733,39 @@ async function buildRequestDocx(row){
   const xml=new DOMParser().parseFromString(new TextDecoder().decode(doc.data),'application/xml');
   const ps=Array.from(xml.getElementsByTagNameNS(NS,'p'));
   const mkrun=(text,tmpl)=>{const r=xml.createElementNS(NS,'w:r'),rp=Array.from(tmpl.children).find(c=>c.localName==='rPr');if(rp)r.appendChild(rp.cloneNode(true));const t=xml.createElementNS(NS,'w:t');t.setAttribute('xml:space','preserve');t.textContent=text;r.appendChild(t);return r;};
-  const beforeTab=(p,idx,text)=>{
-    Array.from(p.getElementsByTagNameNS(NS,'tab')).forEach(t=>{if(t.parentNode.localName==='tabs')return;});
-    Array.from(p.getElementsByTagNameNS(NS,'tab')).filter(t=>t.parentNode.localName==='tabs'&&t.getAttributeNS(NS,'leader')).forEach(t=>t.removeAttributeNS(NS,'leader'));
-    const runs=Array.from(p.children).filter(r=>r.localName==='r'&&r.getElementsByTagNameNS(NS,'tab').length);const r=runs[idx];
-    const ul=run=>{let rp=Array.from(run.children).find(c=>c.localName==='rPr');if(!rp){rp=xml.createElementNS(NS,'w:rPr');run.insertBefore(rp,run.firstChild);}const u=xml.createElementNS(NS,'w:u');u.setAttributeNS(NS,'w:val','single');rp.appendChild(u);};
-    const nr=mkrun(text,r);ul(nr);r.parentNode.insertBefore(nr,r);
-    const tr=xml.createElementNS(NS,'w:r'),rp0=Array.from(r.children).find(c=>c.localName==='rPr');if(rp0)tr.appendChild(rp0.cloneNode(true));tr.appendChild(xml.createElementNS(NS,'w:tab'));ul(tr);
-    const tabEl=r.getElementsByTagNameNS(NS,'tab')[0];tabEl.parentNode.removeChild(tabEl);r.parentNode.insertBefore(tr,r);
+  const meas=(txt,bold)=>{try{const c=(meas.c=meas.c||document.createElement('canvas')).getContext('2d');c.font=(bold?'bold ':'')+'15.33px "Times New Roman",Times,serif';return c.measureText(txt).width*15;}catch(e){return txt.length*0.47*230;}};
+  const ul=run=>{let rp=Array.from(run.children).find(c=>c.localName==='rPr');if(!rp){rp=xml.createElementNS(NS,'w:rPr');run.insertBefore(rp,run.firstChild);}const u=xml.createElementNS(NS,'w:u');u.setAttributeNS(NS,'w:val','single');rp.appendChild(u);};
+  const rprOf=r=>Array.from(r.children).find(c=>c.localName==='rPr');
+  const newRun=(tmpl,kids)=>{const r=xml.createElementNS(NS,'w:r'),rp=rprOf(tmpl);if(rp)r.appendChild(rp.cloneNode(true));kids.forEach(k=>r.appendChild(k));return r;};
+  const stops=(p,fn)=>{const tabs=p.getElementsByTagNameNS(NS,'tabs')[0];fn(tabs);const arr=Array.from(tabs.children).sort((x,y)=>(+x.getAttributeNS(NS,'pos'))-(+y.getAttributeNS(NS,'pos')));arr.forEach(x=>tabs.appendChild(x));};
+  const addStop=(tabs,type,pos)=>{const t=xml.createElementNS(NS,'w:tab');t.setAttributeNS(NS,'w:val',type);t.setAttributeNS(NS,'w:pos',String(Math.round(pos)));tabs.appendChild(t);};
+  // campi compilati: il testo è centrato sul rigo originale (tabulazione centrata + tabulazione sottolineata)
+  const fields=(p,list,dropOld)=>{
+    stops(p,tabs=>{Array.from(tabs.children).forEach(t=>{if(dropOld)tabs.removeChild(t);else t.removeAttributeNS(NS,'leader');});list.forEach(f=>{addStop(tabs,'center',(f.S+f.E)/2);if(dropOld)addStop(tabs,'left',f.E);});});
+    list.forEach(f=>{
+      const base=f.run,before=[],after=[];let seen=!f.rep;
+      if(f.rep){}else{let hit=false;Array.from(base.children).forEach(c=>{if(c.localName==='rPr')return;if(c.localName==='tab'&&!hit){hit=true;return;}(hit?after:before).push(c.cloneNode(true));});}
+      const mkTab=()=>{const r=newRun(base,[xml.createElementNS(NS,'w:tab')]);ul(r);return r;};
+      const val=newRun(base,[]);const t=xml.createElementNS(NS,'w:t');t.setAttribute('xml:space','preserve');t.textContent=f.v||'';val.appendChild(t);ul(val);
+      const par=base.parentNode,seq=[];
+      if(before.length)seq.push(newRun(base,before));
+      seq.push(mkTab(),val,mkTab());
+      if(after.length)seq.push(newRun(base,after));
+      seq.forEach(x=>par.insertBefore(x,base));par.removeChild(base);
+    });
   };
+  const tabRuns=p=>Array.from(p.children).filter(r=>r.localName==='r'&&r.getElementsByTagNameNS(NS,'tab').length);
   const sott=pr.gen==='M'?'Il sottoscritto':'La sottoscritta';
   Array.from(ps[2].getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent==='Il/La sottoscritt__')t.textContent=sott;});
-  beforeTab(ps[1],0,' '+pr.dirig);
-  beforeTab(ps[2],0,' '+pr.nome);beforeTab(ps[2],1,' '+pr.matr);
-  Array.from(ps[3].getElementsByTagNameNS(NS,'t')).forEach(t=>{
-    if(t.textContent.indexOf('_____')>-1){const v=t.textContent.length>30?pr.struttura:pr.qual;t.textContent=' '+v;const rp=t.parentNode.getElementsByTagNameNS(NS,'rPr')[0],u=xml.createElementNS(NS,'w:u');u.setAttributeNS(NS,'w:val','single');rp.appendChild(u);}
-  });
-  beforeTab(ps[4],0,' '+itDate(row.a));beforeTab(ps[4],1,' '+itDate(row.b));beforeTab(ps[5],0,' '+row.n);
+  fields(ps[1],[{run:tabRuns(ps[1])[0],v:pr.dirig,S:5640+meas('di'),E:9780}]);
+  {const R=tabRuns(ps[2]),S1=meas(sott);fields(ps[2],[{run:R[0],v:pr.nome,S:S1,E:7440},{run:R[1],v:pr.matr,S:7440+meas(', matr.'),E:9480}]);}
+  {const us=Array.from(ps[3].children).filter(r=>r.localName==='r'&&/_____/.test(r.textContent));
+   const S1=meas('servizio presso'),E1=S1+meas(us[0].textContent),S2=E1+meas(', in qualità di'),E2=S2+meas(us[1].textContent);
+   fields(ps[3],[{run:us[0],rep:1,v:pr.struttura,S:S1,E:E1},{run:us[1],rep:1,v:pr.qual,S:S2,E:E2}],true);}
+  {const R=tabRuns(ps[4]);fields(ps[4],[{run:R[0],v:itDate(row.a),S:meas('CHIEDE',true)+meas(' di poter usufruire per il periodo dal'),E:6560},{run:R[1],v:itDate(row.b),S:6560+meas(' al'),E:9560}]);}
+  fields(ps[5],[{run:tabRuns(ps[5])[0],v:String(row.n),S:meas('complessivi n.'),E:2260}]);
   if(spec.b){const r=mkrun('\u2612  n. '+row.n+(row.n===1?' giorno':' giorni')+' di festività soppresse',ps[11].getElementsByTagNameNS(NS,'r')[0]);const rp=Array.from(r.children).find(c=>c.localName==='rPr');if(rp)Array.from(rp.children).forEach(c=>{if(['b','bCs','bdr'].includes(c.localName)||c.localName==='sz'||c.localName==='szCs')rp.removeChild(c);});ps[12].appendChild(r);}
-  else if(spec.a||spec.c){if(RQMOT[row.t]&&spec.c===24)beforeTab(ps[25],0,RQMOT[row.t]);const q=ps[spec.a||spec.c];Array.from(q.getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent==='\u2610')t.textContent='\u2612';});}
+  else if(spec.a||spec.c){if(RQMOT[row.t]&&spec.c===24)fields(ps[25],[{run:tabRuns(ps[25])[0],v:RQMOT[row.t],S:meas('     '),E:4560}]);const q=ps[spec.a||spec.c];Array.from(q.getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent==='\u2610')t.textContent='\u2612';});}
   doc.data=new TextEncoder().encode(new XMLSerializer().serializeToString(xml));
   return zipStore(files);
 }
@@ -759,26 +773,28 @@ const RQMOT={visita:'Visite, terapie, esami diagnostici (art. 37 CCNL)'};
 function requestHTML(row){
   const pr=personOf(),spec=RQF[row.t]||{},ck=on=>on?'☒':'☐',mot=RQMOT[row.t]||'';
   const C=[[15,'partecipazione a concorsi/esami/aggiorn.'],[16,'lutto familiare'],[17,'particolari motivi personali/familiari<br>&nbsp;&nbsp;&nbsp;&nbsp;(compresa la nascita del figlio)'],[19,'matrimonio'],[20,'Legge 5.2.1992, n. 104'],[21,'art. 16 CCNL/2000 (dirigenza)'],[22,'mandato amministrativo (D.Lgs. 267/2000)'],[23,'funzioni elettorali (T.U. 361/1957)'],[24,'altro caso previsto dalla normativa vigente']];
-  const ul=(v,w)=>'<span class="ul" style="min-width:'+w+'mm">'+esc(v||'')+'</span>';
+  const ul=(v,w)=>'<span class="ul" style="width:'+w+'mm">'+esc(v||'')+'</span>';
   const lab=(l,t)=>'<span class="lt">'+l+'</span>&nbsp;<b>'+t+'</b>';
   return '<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><title>Richiesta ferie e permessi</title><style>'
    +'@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;font:11.5pt/1.5 "Times New Roman",Times,serif;color:#000}'
    +'.pg{width:210mm;height:296mm;padding:5mm 13mm 0 13mm;position:relative;overflow:hidden}'
-   +'.ul{display:inline-block;border-bottom:.3mm solid #000;padding:0 1mm;vertical-align:baseline;min-height:1.2em}'
+   +'.ul{display:inline-block;border-bottom:.3mm solid #000;text-align:center;vertical-align:baseline;min-height:1.2em;line-height:1.3;overflow:hidden;white-space:nowrap}.nw{white-space:nowrap}'
    +'.box{border:.3mm solid #000;display:flex;margin-top:3.7mm;padding:1.5mm 2.5mm}.box .l{width:101mm;flex:none}.box .o{flex:1;font-size:10.5pt;line-height:1.35}'
    +'.lt{display:inline-block;border:.3mm solid #000;font-size:7pt;font-weight:bold;padding:0 .6mm;line-height:1.3}'
    +'.mot{border-bottom:.3mm solid #000;margin:1.2mm 0 0 4mm;min-height:5mm;font-size:9.5pt}'
    +'</style></head><body><div class="pg">'
    +'<div style="text-align:center"><img src="data:image/png;base64,'+LOGO_B64+'" style="height:42mm"></div>'
-   +'<div style="margin:5mm 0 0 102mm;line-height:1.7">Al Dirigente responsabile<br>di '+ul(pr.dirig,64)+'</div>'
-   +'<div style="margin-top:7mm;line-height:1.85">'+(pr.gen==='M'?'Il sottoscritto':'La sottoscritta')+' '+ul(pr.nome,62)+', matr. '+ul(pr.matr,20)+', in servizio presso<br>'+ul(pr.struttura,50)+', in qualità di '+ul(pr.qual,45)+',<br><b>CHIEDE</b> di poter usufruire per il periodo dal '+ul(itDate(row.a),26)+' al '+ul(itDate(row.b),26)+' di<br>complessivi n. '+ul(String(row.n),14)+' giorni di:</div>'
+   +'<div style="margin:5mm 0 0 104mm;line-height:1.7;white-space:nowrap">Al Dirigente responsabile<br>di '+ul(pr.dirig,68)+'</div>'
+   +'<div class="nw" style="margin-top:7mm;line-height:1.9">'+(pr.gen==='M'?'Il sottoscritto':'La sottoscritta')+' '+ul(pr.nome,108)+', matr. '+ul(pr.matr,25)+', in<br>servizio presso '+ul(pr.struttura,71)+', in qualità di '+ul(pr.qual,57)+',<br><b>CHIEDE</b> di poter usufruire per il periodo dal '+ul(itDate(row.a),40)+' al '+ul(itDate(row.b),46)+' di<br>complessivi n. '+ul(String(row.n),16)+' giorni di:</div>'
    +'<div class="box" style="margin-top:4mm"><div class="l">'+lab('A','Ferie')+'</div><div class="o">'+ck(spec.a===8)+' relativi al corrente anno<br>'+ck(spec.a===9)+' relativi al decorso anno</div></div>'
    +'<div class="box"><div class="l">'+lab('B','Festività soppresse')+'</div><div class="o">'+(spec.b?'☒ n. '+row.n+(row.n===1?' giorno':' giorni'):'')+'</div></div>'
    +'<div class="box" style="min-height:84mm"><div class="l">'+lab('C','Permessi retribuiti')+'</div><div class="o">'+C.map(c=>ck(spec.c===c[0])+' '+c[1]+(c[0]===24?'<div class="mot">'+esc(mot)+'</div>':'')).join('<br>').replace(/<br><div/,'<div')+'</div></div>'
    +'<div style="font-size:7.5pt;line-height:1.3;margin-top:2mm"><b>N.B.:</b> - Allegare documentazione giustificativa<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- La semplice presentazione della domanda non legittima il/la dipendente ad astenersi dal lavoro</div>'
-   +'<div style="margin-top:6mm">Data '+ul('',48)+'<span style="margin-left:48mm">Con osservanza '+ul('',50)+'</span></div>'
-   +'<div style="text-align:center;font-weight:bold;margin-top:5mm">SI AUTORIZZA</div>'
-   +'<div style="margin-top:2mm;display:flex;justify-content:space-between"><span>Il Dirigente resp. U.O./Uff./Serv. '+ul('',50)+'</span><span style="margin-right:8mm">Il Dirigente '+ul('',50)+'</span></div></div></body></html>';
+   +'<div class="nw" style="margin-top:6mm;display:flex"><span style="width:123mm">Data '+ul('',34)+'</span><span>Con osservanza</span></div>'
+   +'<div style="margin:5mm 0 0 115mm">'+ul('',44)+'</div>'
+   +'<div style="text-align:center;font-weight:bold;margin-top:3mm">SI AUTORIZZA</div>'
+   +'<div class="nw" style="margin-top:3mm;display:flex"><span style="width:132mm">Il Dirigente resp. U.O./Uff./Serv.</span><span>Il Dirigente</span></div>'
+   +'<div class="nw" style="margin-top:5mm;display:flex"><span style="width:119mm">'+ul('',55)+'</span><span>'+ul('',46)+'</span></div></div></body></html>';
 }
 function requestsHTML(rows){
   const hs=rows.map(requestHTML),head=hs[0].slice(0,hs[0].indexOf('<body>')+6);
