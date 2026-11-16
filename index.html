@@ -175,7 +175,7 @@ textarea.manual{height:140px;font-family:var(--font-mono);font-size:12px}
   <header class="top">
     <div>
       <h1>Calendario agende</h1>
-      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 55</div>
+      <div class="sub">Sospensioni dell'ambulatorio, motivazioni e spettanze in un solo posto · versione 56</div>
     </div>
     <div class="save" id="saveStatus" role="status"></div>
   </header>
@@ -922,12 +922,15 @@ function suspData(){
   const R=modR(),s=state.settings,gs=suspGroups(R.from,R.to),main=mainMotivo(gs),cs=s.codes.filter(c=>c.code);
   return {proj:cs.map(c=>[c.code,c.desc,c.comune,c.sede,formDate(R.from),formDate(R.to)]),rows:gs.map(g=>({s:formDate(g.start),e:formDate(g.end),m:s.motivoAll?motivoOf(g):motivoOf(g)})),main,codes:cs.map(c=>c.code),motivoAll:!!s.motivoAll};
 }
-async function buildSuspDocx(part){
+async function buildSuspDocx(){
   const NS='http://schemas.openxmlformats.org/wordprocessingml/2006/main',XNS='http://www.w3.org/XML/1998/namespace',PER=14,d=suspData();
   const allm=new Set(d.rows.map(r=>r.m)),uniq=(!d.motivoAll&&allm.size===1)?d.main:'';
-  const rows=d.rows.slice(part*PER,(part+1)*PER);
+  const nParts=Math.max(1,Math.ceil(d.rows.length/PER));
   const files=await unzipAll(b64u8(TPLS_B64)),doc=files.find(f=>f.name==='word/document.xml');
-  const xml=new DOMParser().parseFromString(new TextDecoder().decode(doc.data),'application/xml');
+  const tplText=new TextDecoder().decode(doc.data);
+  const fillPart=(part)=>{
+  const rows=d.rows.slice(part*PER,(part+1)*PER);
+  const xml=new DOMParser().parseFromString(tplText,'application/xml');
   const kids=(el,n)=>Array.from(el.children).filter(c=>c.localName===n);
   const el=(n)=>xml.createElementNS(NS,'w:'+n);
   const settext=(tc,text,sz,center)=>{
@@ -948,12 +951,24 @@ async function buildSuspDocx(part){
     const ps=Array.from(xml.getElementsByTagNameNS(NS,'p'));
     for(const p of ps){const txt=p.textContent;
       if(txt.indexOf('_____')===0&&txt.length>=38&&txt.indexOf('Richiedente')<0){
-        const X='<w:r xmlns:w="'+NS+'" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w10="urn:schemas-microsoft-com:office:word"><w:pict><v:rect id="MotivoSosp" style="position:absolute;margin-left:0;margin-top:-24pt;width:228pt;height:36pt;z-index:251660288;mso-position-horizontal-relative:text;mso-position-vertical-relative:text;v-text-anchor:bottom" filled="f" stroked="f"><v:textbox inset="0,0,0,0"><w:txbxContent><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:b w:val="0"/><w:bCs w:val="0"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">'+esc(uniq)+'</w:t></w:r></w:p></w:txbxContent></v:textbox><w10:wrap type="none"/></v:rect></w:pict></w:r>';
+        const X='<w:r xmlns:w="'+NS+'" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w10="urn:schemas-microsoft-com:office:word"><w:pict><v:rect id="MotivoSosp'+part+'" style="position:absolute;margin-left:0;margin-top:-24pt;width:228pt;height:36pt;z-index:251660288;mso-position-horizontal-relative:text;mso-position-vertical-relative:text;v-text-anchor:bottom" filled="f" stroked="f"><v:textbox inset="0,0,0,0"><w:txbxContent><w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:b w:val="0"/><w:bCs w:val="0"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">'+esc(uniq)+'</w:t></w:r></w:p></w:txbxContent></v:textbox><w10:wrap type="none"/></v:rect></w:pict></w:r>';
         const node=xml.importNode(new DOMParser().parseFromString(X,'application/xml').documentElement,true);
         const first=kids(p,'r')[0];p.insertBefore(node,first);break;}
     }
   }
   Array.from(xml.getElementsByTagNameNS(NS,'t')).forEach(t=>{if(t.textContent.indexOf('Guanto')>-1)t.textContent=t.textContent.replace('Guanto','Guasto');});
+  return xml;
+  };
+  const xml=fillPart(0),body=Array.from(xml.getElementsByTagNameNS(NS,'body'))[0];
+  for(let part=1;part<nParts;part++){
+    const x2=fillPart(part),b2=Array.from(x2.getElementsByTagNameNS(NS,'body'))[0],sect=Array.from(body.children).filter(c=>c.localName==='sectPr')[0];
+    let first=true;
+    Array.from(b2.children).filter(c=>c.localName!=='sectPr').forEach(c=>{
+      const n=xml.importNode(c,true);
+      if(first&&n.localName==='p'){first=false;let ppr=Array.from(n.children).filter(k=>k.localName==='pPr')[0];if(!ppr){ppr=xml.createElementNS(NS,'w:pPr');n.insertBefore(ppr,n.firstChild);}const pb=xml.createElementNS(NS,'w:pageBreakBefore');ppr.insertBefore(pb,ppr.firstChild);}
+      body.insertBefore(n,sect||null);
+    });
+  }
   doc.data=new TextEncoder().encode(new XMLSerializer().serializeToString(xml));
   return zipStore(files);
 }
@@ -969,7 +984,7 @@ function renderModPeriodo(){
     +'<div class="cols"><label class="f">Dal<input type="date" id="mp-from" value="'+R.from+'"></label><label class="f">Al<input type="date" id="mp-to" value="'+R.to+'"></label></div>'
     +'<div class="hint">'+d.rows.length+(d.rows.length===1?' riga di sospensione':' righe di sospensione')+' nel periodo.</div>'
     +'<div class="row"><button class="btn small" data-act="mpreset">Tutta la proiezione</button><button class="btn primary" data-act="suspprint">Stampa / PDF</button>';
-  for(let i=0;i<parts;i++)h+='<button class="btn" data-act="suspword" data-part="'+i+'">Scarica Word'+(parts>1?' (foglio '+(i+1)+' di '+parts+')':'')+'</button>';
+  h+='<button class="btn" data-act="suspword">Scarica Word'+(parts>1?' ('+parts+' pagine)':'')+'</button>';
   return h+'</div></div>';
 }
 function renderMod(){
@@ -1175,7 +1190,7 @@ function clickHandler(ev){
   else if(a==='rpcopy')copyText(rpText());
   else if(a==='mpreset'){view.mp=null;render();}
   else if(a==='suspprint')printSusp();
-  else if(a==='suspword'){buildSuspDocx(+b.dataset.part).then(bl=>{if(!downloads){toast('Download non disponibile qui');return;}return bl.arrayBuffer().then(ab=>download('Sospensione_agende_'+modR().from+'_'+modR().to+(b.dataset.part>0?'_'+(+b.dataset.part+1):'')+'.docx',new Uint8Array(ab),'Word'));}).catch(e=>toast('Errore Word: '+(e&&e.message||e)));}
+  else if(a==='suspword'){buildSuspDocx().then(bl=>{if(!downloads){toast('Download non disponibile qui');return;}return bl.arrayBuffer().then(ab=>download('Sospensione_agende_'+modR().from+'_'+modR().to+'.docx',new Uint8Array(ab),'Word'));}).catch(e=>toast('Errore Word: '+(e&&e.message||e)));}
   else if(a==='rpall'){printRequests(rpRows()||[]);}
   else if(a==='rqword'||a==='rqpdf'){const row=(rpRows()||[])[+b.dataset.i];if(!row)return;
     if(a==='rqpdf'){printRequest(row);return;}
